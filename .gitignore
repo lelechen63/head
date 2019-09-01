@@ -1,29 +1,28 @@
-./audio/*
+audio/
 
-./basics/*
+basics/
 
-./checkpoints/*
+checkpoints/
 
-./image/*
+image/
 
-./lmark/*
+lmark/
 
-./logs/*
+logs/
 
-./model/*
+model/
 
-./models/*
+models/
 
-./results/*
+results/
 
-./sample/*
+sample/
 
-./temp/*
+temp/
+temp2/
 
-./temp2/*
+tet_result/
 
-./tet_result/*
+tmp/
 
-./tmp/*
-
-./video/*
+video/
