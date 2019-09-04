@@ -839,99 +839,66 @@ def compose_lmark_face_dataset():
         
         
 def compose_front():
-    root  = '/data2/lchen63/voxceleb'
+    root  = '/home/cxu-serve/p1/lchen63/voxceleb'
     n = 68
-    _file = open(os.path.join(root, 'txt' ,  "train2_clean.pkl"), "rb")
+    _file = open(os.path.join(root, 'txt' ,  "test_clean.pkl"), "rb")
     data = pickle.load(_file)
 #     print (data)
     new_data = []
     
     for index in range(len(data)):
-        if index == 1000:
+        if index == 10:
             break
+        print (data[index])
         tmp = data[index][0].split('/')
         if len(data[index][2]) ==1:
             f_lmark =  os.path.join(root, 'unzip',data[index][0], data[index][2][0] + '_front.npy' )
-            rt =  os.path.join(root, 'unzip',data[index][0], data[index][2][0] + '_sRT.npy' )
+            rt_path =  os.path.join(root, 'unzip',data[index][0], data[index][2][0] + '_sRT.npy' )
             o_lmark =  os.path.join(root, 'unzip',data[index][0], data[index][2][0] + '.npy' )
             v_path =  os.path.join(root, 'unzip',data[index][0], data[index][2][0] + '.mp4' )
-            
+            rt = np.load( rt_path)
             v_id = os.path.join(data[index][0], data[index][2][0])
-            new_data.append([v_path, f_lmark, o_lmark , rt])
-            
-#             f_lmark = np.load( os.path.join(root, 'unzip',data[index][0], data[index][2][0] + '_front.npy' ))
-#             rt = np.load( os.path.join(root, 'unzip',data[index][0], data[index][2][0] + '_sRT.npy' ))
-#             o_lmark = np.load( os.path.join(root, 'unzip',data[index][0], data[index][2][0] + '.npy' ))
-#             v_path =  os.path.join(root, 'unzip',data[index][0], data[index][2][0] + '.mp4' )
-            
-#             v_id = os.path.join(data[index][0], data[index][2][0])
-#             new_data.append([v_path, f_lmark, o_lmark , v_path])
 
-#             lmark_length = f_lmark.shape[0]
-# #             cap  =  cv2.VideoCapture(v_path)
-#             for gg in range(0, lmark_length):
-# #                 ret, frame = cap.read()
-# #                 frame= cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-#                 err = o_lmark[gg] - f_lmark[gg]
-#                 err = multiply(err, err)
-#                 err = sum(err)
-#                 rmse = sqrt(err/n);
-#                 print ("RMSE:", rmse)
-#                 if rmse > 10:
-#                     break
-#                 else:
-#                     new_data.append([v_path, gg])
-#                     break
-# #                 plt = utils.compare_vis(frame,f_lmark[gg], o_lmark[gg])
-# #                 plt.show()
+            lmark = np.load(o_lmark)
+               #vialisze the results
+            
+            
         else:  
-#             continue
             for r in range(len(data[index][2])):
                 f_lmark =  os.path.join(root, 'unzip',data[index][0], data[index][2][r] + '_front.npy' )
-                rt =  os.path.join(root, 'unzip',data[index][0], data[index][2][r] + '_sRT.npy' )
+                rt_path =  os.path.join(root, 'unzip',data[index][0], data[index][2][0] + '_sRT.npy' )
+                
                 o_lmark =  os.path.join(root, 'unzip',data[index][0], data[index][2][r] + '.npy' )
                 v_path =  os.path.join(root, 'unzip',data[index][0], data[index][2][r] + '.mp4' )
 
                 v_id = os.path.join(data[index][0], data[index][2][0])
                 new_data.append([v_path, f_lmark, o_lmark , rt])
-                
-#                 v_id = os.path.join(data[index][0], data[index][2][r])
-#                 f_lmark = np.load( os.path.join(root, 'unzip',data[index][0], data[index][2][r] + '_front.npy' ))
-#                 o_lmark = np.load( os.path.join(root, 'unzip',data[index][0], data[index][2][r] + '.npy' ))
-#                 v_path =  os.path.join(root, 'unzip',data[index][0], data[index][2][r] + '.mp4' )
-
-
-#                 lmark_length = f_lmark.shape[0]
-#                 new_data.append([v_path, f_lmark, o_lmark , v_path])
-#                 cap  =  cv2.VideoCapture(v_path)
-#                 for gg in range(0, lmark_length):
-# #                     ret, frame = cap.read()
-# #                     frame= cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-#                     err = o_lmark[gg] - f_lmark[gg]
-#                     err = multiply(err, err)
-#                     err = sum(err)
-#                     rmse = sqrt(err/n);
-# #                     print ("RMSE:", rmse)
-#                     if rmse > 10:
-#                         break
-#                     else:
-#                         new_data.append([v_path, gg])
-#                         break
-# #                     plt = utils.compare_vis(frame,f_lmark[gg], o_lmark[gg])
-# #                     plt.show()
-# #                 cap.release()
-# #                 cv2.destroyAllWindows() 
+                rt = np.load(rt_path )
+                lmark = np.load(o_lmark)
+        video_path = os.path.join(root, 'unzip', v_id +  '.mp4')
+        cap = cv2.VideoCapture(video_path)
+        frames = []
+        lmark_length = lmark.size(0)
+        for t in range(lmark_length):
+            ret, frame = cap.read()
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            vis(frames, lmark[sample_id],frames[min_r_index],lmark[min_r_index],frames[min_t_index],lmark[min_t_index])
+        new_data.append([v_path, f_lmark, o_lmark , rt])
 
     print (new_data[0])
     print (len(new_data))
     with open(os.path.join('/data2/lchen63/voxceleb/txt','rt.pkl'), 'wb') as handle:
         pickle.dump(new_data, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+
+compose_front()
+
 # compose_dataset()
 # compose_lmark_face_dataset()
 # clean_by_RT()
 # video2img2lmark()
 # compute_RT()
 # audio2mfcc('/data2/lchen63/voxceleb/txt/v_test.txt')
-video_transfer('/data2/lchen63/voxceleb/txt/v_dev.txt')
+# video_transfer('/data2/lchen63/voxceleb/txt/v_dev.txt')
 # compose_front()
 # get_train_pair('/data2/lchen63/voxceleb/txt/v_test.txt')
