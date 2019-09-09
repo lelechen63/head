@@ -924,7 +924,7 @@ def compose_front():
         pickle.dump(new_data, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 
-def rotate_3d (rt, obj):
+# def rotate_3d (rt, obj):
 
 
 
