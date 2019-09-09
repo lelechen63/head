@@ -50,6 +50,21 @@ other = [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], \
 faceLmarkLookup = Mouth + Nose + leftBrow + rightBrow + leftEye + rightEye + other
 
 
+def smooth(kps, ALPHA1=0.2, ALPHA2=0.7):
+    
+    n = kps.shape[0]
+
+    kps_new = np.zeros_like(kps)
+
+    for i in range(n):
+        if i==0:
+            kps_new[i,:,:] = kps[i,:,:]
+        else:
+            kps_new[i,:48,:] = ALPHA1 * kps[i,:48,:] + (1-ALPHA1) * kps_new[i-1,:48,:]
+            kps_new[i,48:,:] = ALPHA2 * kps[i,48:,:] + (1-ALPHA2) * kps_new[i-1,48:,:]
+
+    # np.save(out_file, kps_new)
+    return kps_new
 
 def crop_mouth(img, lmark):
     (x, y, w, h) = cv2.boundingRect(lmark[48:68,:-1].astype(int))
