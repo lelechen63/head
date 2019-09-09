@@ -568,13 +568,17 @@ def compute_PCA():
     lmark_list = []
     
     for index in range(len(train_data)):
-        if index == 10:
+        if index == 2000:
             break
         for i in range(len(train_data[index][2])):
             lmark_path = os.path.join('/data2/lchen63/voxceleb/unzip', train_data[index][0], train_data[index][2][i] + '_front.npy' )
             t_lmark = np.load(lmark_path)
             if t_lmark.shape[0] < 64:
                 continue
+
+            t_lmark = utils.smooth(t_lmark)
+
+            
         lmark_list.append(t_lmark)
     lmark_list = torch.stack(lmark_list,dim= 0)
     print (lmark_list.shape)
@@ -843,10 +847,10 @@ def compose_front():
     n = 68
     _file = open(os.path.join(root, 'txt' ,  "test_clean.pkl"), "rb")
     data = pickle.load(_file)
-#     print (data)
+    print (data)
     new_data = []
-    
-    for index in range(len(data)):
+    # data= [['test_video/id03127/Zss2vvY2aLo',1254, ['00231']]]
+    for index in range(100):
         if index == 10:
             break
         print (data[index])
@@ -860,38 +864,74 @@ def compose_front():
             v_id = os.path.join(data[index][0], data[index][2][0])
 
             lmark = np.load(o_lmark)
-               #vialisze the results
-            
+
+            new_data.append([v_path, f_lmark, o_lmark , rt_path])
+            video_path = os.path.join(root, 'unzip', v_id +  '.mp4')
+            cap = cv2.VideoCapture(video_path)
+            frames = []
+            lmark_length = lmark.shape[0]
+            find_rt = []
+            for t in range(0, lmark_length):
+                find_rt.append(sum(np.absolute(rt[t,:3])))
+
+                ret, frame = cap.read()
+                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                frames.append(frame)
+                # vis(frame, lmark[t],frame, lmark[t],frame, lmark[t])
+            # new_data.append([v_path, f_lmark, o_lmark , rt])
+            find_rt = np.asarray(find_rt)
+
+            min_index = np.argmin(find_rt)
+
+            new_data[-1].append(min_index)
             
         else:  
             for r in range(len(data[index][2])):
                 f_lmark =  os.path.join(root, 'unzip',data[index][0], data[index][2][r] + '_front.npy' )
-                rt_path =  os.path.join(root, 'unzip',data[index][0], data[index][2][0] + '_sRT.npy' )
+                rt_path =  os.path.join(root, 'unzip',data[index][0], data[index][2][r] + '_sRT.npy' )
                 
                 o_lmark =  os.path.join(root, 'unzip',data[index][0], data[index][2][r] + '.npy' )
                 v_path =  os.path.join(root, 'unzip',data[index][0], data[index][2][r] + '.mp4' )
 
-                v_id = os.path.join(data[index][0], data[index][2][0])
-                new_data.append([v_path, f_lmark, o_lmark , rt])
+                v_id = os.path.join(data[index][0], data[index][2][r])
+                new_data.append([v_path, f_lmark, o_lmark , rt_path])
                 rt = np.load(rt_path )
                 lmark = np.load(o_lmark)
-        video_path = os.path.join(root, 'unzip', v_id +  '.mp4')
-        cap = cv2.VideoCapture(video_path)
-        frames = []
-        lmark_length = lmark.size(0)
-        for t in range(lmark_length):
-            ret, frame = cap.read()
-            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            vis(frames, lmark[sample_id],frames[min_r_index],lmark[min_r_index],frames[min_t_index],lmark[min_t_index])
-        new_data.append([v_path, f_lmark, o_lmark , rt])
+                video_path = os.path.join(root, 'unzip', v_id +  '.mp4')
+                cap = cv2.VideoCapture(video_path)
+                frames = []
+                lmark_length = lmark.shape[0]
+                find_rt = []
+                for t in range(0, lmark_length):
+                    print (rt[t])
+                    find_rt.append(sum(np.absolute(rt[t,:3])))
+
+                    ret, frame = cap.read()
+                    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                    frames.append(frame)
+                    # vis(frame, lmark[t],frame, lmark[t],frame, lmark[t])
+                # new_data.append([v_path, f_lmark, o_lmark , rt])
+                find_rt = np.asarray(find_rt)
+
+                min_index = np.argmin(find_rt)
+
+                new_data[-1].append(min_index)
+        # vis(frames[min_index], lmark[min_index],frames[min_index], lmark[min_index],frames[min_index], lmark[min_index])
 
     print (new_data[0])
     print (len(new_data))
-    with open(os.path.join('/data2/lchen63/voxceleb/txt','rt.pkl'), 'wb') as handle:
+    with open(os.path.join(root, 'txt','front_rt.pkl'), 'wb') as handle:
         pickle.dump(new_data, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 
-compose_front()
+def rotate_3d (rt, obj):
+
+
+
+
+compute_PCA()
+# rotate_3d('/test_video/id03127/Zss2vvY2aLo/00231_sRT.npy', '/test_video/id03127/Zss2vvY2aLo/00231.npy')
+# compose_front()
 
 # compose_dataset()
 # compose_lmark_face_dataset()
