@@ -573,12 +573,13 @@ def compute_PCA():
         for i in range(len(train_data[index][2])):
             lmark_path = os.path.join('/data2/lchen63/voxceleb/unzip', train_data[index][0], train_data[index][2][i] + '_front.npy' )
             t_lmark = np.load(lmark_path)
+            print (t_lmark.shape)
             if t_lmark.shape[0] < 64:
                 continue
 
             t_lmark = utils.smooth(t_lmark)
-
-            
+            print (t_lmark.shape)
+            print ('=====')
         lmark_list.append(t_lmark)
     lmark_list = torch.stack(lmark_list,dim= 0)
     print (lmark_list.shape)
