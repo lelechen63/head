@@ -570,8 +570,8 @@ def compute_PCA():
     k = 20
     print (len(train_data))
     for index in range(len(train_data)):
-        if index == 10000:
-            break
+        # if index == 10000:
+        #     break
         for i in range(len(train_data[index][2])):
             lmark_path = os.path.join(  root ,  'unzip', train_data[index][0], train_data[index][2][i] + '_front.npy' )
             t_lmark = np.load(lmark_path)
