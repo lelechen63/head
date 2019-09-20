@@ -311,7 +311,7 @@ def compute_RT():
     consider_key = [1,2,3,4,5,11,12,13,14,15,27,28,29,30,31,32,33,34,35,39,42,36,45,17,21,22,26]
     print (len(consider_key))
     k = 20
-    _file = open( os.path.join( root, "/txt/train2.pkl") , "rb")
+    _file = open( os.path.join( root, "txt/train2.pkl") , "rb")
     train_data = pickle.load(_file)
     landmarks = []
     RT_list = []
