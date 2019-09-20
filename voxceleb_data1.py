@@ -431,8 +431,7 @@ def vis(img,lmark1,lmark2):
     plt.show()
 def clean_by_RT():
     n = 68
-    root = '/data2/lchen63/voxceleb/'
-    _file = open(os.path.join("/data2/lchen63/voxceleb/txt/", "test.pkl"), "rb")
+    _file = open(os.path.join( root , "txt/", "trian2.pkl"), "rb")
     data = pickle.load(_file)
     _file.close()
     k = len(data)
@@ -491,7 +490,7 @@ def clean_by_RT():
             final.append(data_copy[index])
     print (len(final))
     print(k)
-    with open(os.path.join('/data2/lchen63/voxceleb/txt','test_clean.pkl'), 'wb') as handle:
+    with open(os.path.join(root, 'txt','train2_clean.pkl'), 'wb') as handle:
         pickle.dump(final, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 def label_id():
@@ -570,7 +569,7 @@ def compute_PCA():
     k = 20
     print (len(train_data))
     for index in range(len(train_data)):
-        if index == 15000:
+        if index == 9000:
             break
         for i in range(len(train_data[index][2])):
             lmark_path = os.path.join(  root ,  'unzip', train_data[index][0], train_data[index][2][i] + '_front.npy' )
@@ -595,12 +594,11 @@ def compute_PCA():
     np.save('./basics/U_front_smooth_vox.npy', U.cpu().numpy())
 
 def compose_audio_lmark_dataset():
-    root  = '/data2/lchen63/voxceleb'
     lstm = False
     open_pair = []
     for i in range(3):
         open_pair.append([i + 61, 67 - i])
-    _file = open(os.path.join(root, 'txt' ,  "test_clean.pkl"), "rb")
+    _file = open(os.path.join(root, 'txt' ,  "train_clean.pkl"), "rb")
     data = pickle.load(_file)
     new_data = []
     
@@ -686,7 +684,7 @@ def compose_audio_lmark_dataset():
     if lstm:
         nname =  os.path.join('/data2/lchen63/voxceleb/txt','train_clean_lstm.pkl')
     else:
-        nname = os.path.join('/data2/lchen63/voxceleb/txt','test_clean_new.pkl') 
+        nname = os.path.join('/data2/lchen63/voxceleb/txt','train_clean_new.pkl') 
     with open(nname, 'wb') as handle:
         pickle.dump(new_data, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
@@ -932,7 +930,7 @@ compute_PCA()
 
 # compose_dataset()
 # compose_lmark_face_dataset()
-# clean_by_RT()
+clean_by_RT()
 # video2img2lmark()
 # compute_RT()
 # audio2mfcc('/data2/lchen63/voxceleb/txt/v_test.txt')
