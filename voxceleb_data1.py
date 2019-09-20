@@ -316,7 +316,7 @@ def compute_RT():
     landmarks = []
     RT_list = []
     source = np.zeros((len(consider_key),3))
-    ff = np.load( os.path.join(root, '/dev_video/id02343/08TabUdunsU/00001.npy'))[30]
+    ff = np.load( os.path.join(root, 'dev_video/id02343/08TabUdunsU/00001.npy'))[30]
     for m in range(len(consider_key)):
         source[m] = ff[consider_key[m]]
         
