@@ -74,7 +74,7 @@ def shape_to_np(shape, dtype):
     return coord
 
 def extract_landmarks(image):
-    p = "common-data/shape_predictor_68_face_landmarks.dat"
+    p = "../basics/shape_predictor_68_face_landmarks.dat"
     detector = dlib.get_frontal_face_detector()
     predictor = dlib.shape_predictor(p)
     print('training model loaded...')
