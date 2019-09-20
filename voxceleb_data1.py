@@ -561,7 +561,7 @@ def label_id():
 # label_id()        
 # clean_by_RT()    
 def compute_PCA():
-    _file = open( os.path.join(root, "txt/train.pkl"),      "rb")
+    _file = open( os.path.join(root, "txt/train2.pkl"),      "rb")
     train_data = pickle.load(_file)
     random.shuffle(train_data)
 
@@ -925,7 +925,7 @@ def compose_front():
 
 
 
-# compute_PCA()
+compute_PCA()
 
 # rotate_3d('/test_video/id03127/Zss2vvY2aLo/00231_sRT.npy', '/test_video/id03127/Zss2vvY2aLo/00231.npy')
 # compose_front()
@@ -934,7 +934,7 @@ def compose_front():
 # compose_lmark_face_dataset()
 # clean_by_RT()
 # video2img2lmark()
-compute_RT()
+# compute_RT()
 # audio2mfcc('/data2/lchen63/voxceleb/txt/v_test.txt')
 # video_transfer('/data2/lchen63/voxceleb/txt/v_dev.txt')
 # compose_front()
