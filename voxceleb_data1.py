@@ -311,12 +311,12 @@ def compute_RT():
     consider_key = [1,2,3,4,5,11,12,13,14,15,27,28,29,30,31,32,33,34,35,39,42,36,45,17,21,22,26]
     print (len(consider_key))
     k = 20
-    _file = open( "/data2/lchen63/voxceleb/txt/test.pkl", "rb")
+    _file = open( os.path.join( root, "/txt/train2.pkl") , "rb")
     train_data = pickle.load(_file)
     landmarks = []
     RT_list = []
     source = np.zeros((len(consider_key),3))
-    ff = np.load('/data2/lchen63/voxceleb/unzip/dev_video/id02343/08TabUdunsU/00001.npy')[30]
+    ff = np.load( os.path.join(root, '/dev_video/id02343/08TabUdunsU/00001.npy'))[30]
     for m in range(len(consider_key)):
         source[m] = ff[consider_key[m]]
         
@@ -326,9 +326,9 @@ def compute_RT():
         print ( train_data[index][0])
 
         for i in range(len(train_data[index][2])):
-            lmark_path = os.path.join('/data2/lchen63/voxceleb/unzip', train_data[index][0], train_data[index][2][i] + '.npy' )
-            srt_path = os.path.join('/data2/lchen63/voxceleb/unzip', train_data[index][0], train_data[index][2][i] + '_sRT.npy')
-            front_path = os.path.join('/data2/lchen63/voxceleb/unzip', train_data[index][0], train_data[index][2][i] + '_front.npy')
+            lmark_path = os.path.join( root, 'unzip', train_data[index][0], train_data[index][2][i] + '.npy' )
+            srt_path = os.path.join(root, 'unzip', train_data[index][0], train_data[index][2][i] + '_sRT.npy')
+            front_path = os.path.join(root, 'unzip', train_data[index][0], train_data[index][2][i] + '_front.npy')
             if os.path.exists(srt_path) and os.path.exists(front_path):                
                 continue
                 
@@ -360,8 +360,8 @@ def compute_RT():
                 vec = r.as_rotvec()             
                 RTs[j,:3] = vec
                 RTs[j,3:] =  np.squeeze(np.asarray(ret_t))            
-            np.save(os.path.join('/data2/lchen63/voxceleb/unzip', train_data[index][0], train_data[index][2][i] + '_sRT.npy'), RTs)
-            np.save(os.path.join('/data2/lchen63/voxceleb/unzip', train_data[index][0], train_data[index][2][i] + '_front.npy'), nomalized)
+            np.save(os.path.join( root, 'unzip', train_data[index][0], train_data[index][2][i] + '_sRT.npy'), RTs)
+            np.save(os.path.join( root, 'unzip', train_data[index][0], train_data[index][2][i] + '_front.npy'), nomalized)
             print (time.time() - t )
 
 
@@ -934,8 +934,8 @@ def compose_front():
 # compose_lmark_face_dataset()
 # clean_by_RT()
 # video2img2lmark()
-# compute_RT()
+compute_RT()
 # audio2mfcc('/data2/lchen63/voxceleb/txt/v_test.txt')
 # video_transfer('/data2/lchen63/voxceleb/txt/v_dev.txt')
 # compose_front()
-get_train_pair( os.path.join(root, 'txt/v_dev.txt')  )
+# get_train_pair( os.path.join(root, 'txt/v_dev.txt')  )
