@@ -938,4 +938,4 @@ def compose_front():
 # audio2mfcc('/data2/lchen63/voxceleb/txt/v_test.txt')
 # video_transfer('/data2/lchen63/voxceleb/txt/v_dev.txt')
 # compose_front()
-get_train_pair( os.path.join(root, 'txt/v_train.txt')  )
+get_train_pair( os.path.join(root, 'txt/v_dev.txt')  )
