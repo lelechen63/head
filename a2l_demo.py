@@ -2,7 +2,7 @@ import os
 import argparse
 
 import librosa
-from ATVG import AT_single2 as atnet
+from ATVG import AT_single as atnet
 # from ATVG import AT_single2_no_pca as atnet
 import cv2
 import scipy.misc
@@ -97,14 +97,14 @@ def parse_args():
 #                      default="./model/at2_no_pca_openrate_loss2/anet2_single.pth")
     parser.add_argument("--at_model",
                      type=str,
-                     default="./model/at2_pca_grid/anet2_single.pth")
+                     default="./model/at/anet_single.pth")
     parser.add_argument( "--sample_dir",
                     type=str,
                     default="./results")
     parser.add_argument('-i','--in_file', type=str, default='./audio/test.wav')
-    parser.add_argument('-data','--dataset_name', type=str, default='grid')
+    parser.add_argument('-data','--dataset_name', type=str, default='vox')
     parser.add_argument('-d','--data_path', type=str, default='./basics')
-    parser.add_argument('-p','--person', type=str, default='./image/test2.png')
+    parser.add_argument('-p','--person', type=str, default='./image/test2.jpg')
     parser.add_argument('-v','--video', type=str, default='./video/test.mp4')
     parser.add_argument('--device_ids', type=str, default='2')
     parser.add_argument('--num_thread', type=int, default=1)   
@@ -231,7 +231,7 @@ def compute_RT(video_path):
     source = np.zeros((len(consider_key),3))
     
 #     ff = np.load('/data/lchen63/grid/zip/video/s20/video/mpg_6000/bbad3n.npy')[0]
-    ff = np.load('/data2/lchen63/voxceleb/unzip/dev_video/id02343/08TabUdunsU/00001.npy')[30]
+    ff = np.load('./vox_sample/08TabUdunsU/00001.npy')[30]
     for m in range(len(consider_key)):
         source[m] = ff[consider_key[m]]
         
@@ -278,7 +278,7 @@ def compute_RT_single(img_path):
     
 #     ff = np.load('/data/lchen63/grid/zip/video/s20/video/mpg_6000/bbad3n.npy')[0]
     
-    ff = np.load('/data2/lchen63/voxceleb/unzip/dev_video/id02343/08TabUdunsU/00001.npy')[30]
+    ff = np.load('./vox_sample/08TabUdunsU/00001.npy')[30]
     for m in range(len(consider_key)):
         source[m] = ff[consider_key[m]]
         
@@ -313,8 +313,14 @@ def compute_RT_single(img_path):
         vec = r.as_rotvec()             
         RTs[j,:3] = vec
         RTs[j,3:] =  np.squeeze(np.asarray(ret_t))            
+    # after frontilize, we need to 
+    
     np.save(srt_path, RTs)
     np.save(front_path, nomalized)
+
+
+
+
     
     return nomalized
 
@@ -336,13 +342,11 @@ def test():
     os.mkdir('./tmp')  
     
     if config.dataset_name == 'vox':
-        face_pca = torch.FloatTensor( np.load('./basics/U_front_roni.npy')[:,:6]).cuda()
-        face_mean =torch.FloatTensor( np.load('./basics/mean_front_roni.npy')).cuda()
-        lip_pca = torch.FloatTensor( np.load('./basics/U_front.npy')[:,:6]).cuda()
-        lip_mean =torch.FloatTensor( np.load('./basics/mean_front.npy')).cuda()
+        pca = torch.FloatTensor( np.load('./basics/U_front_smooth_vox.npy')[:,:6]).cuda()
+        mean =torch.FloatTensor( np.load('./basics/mean_front_smooth_vox.npy')).cuda() 
 
-        lip_std = torch.FloatTensor( np.load('./basics/std_front.npy')).cuda()
-        face_std = torch.FloatTensor( np.load('./basics/std_front_roni.npy')).cuda()
+
+       
     elif config.dataset_name == 'grid':
         face_pca = torch.FloatTensor( np.load('./basics/U_grid_roni.npy')[:,:6]).cuda()
         face_mean =torch.FloatTensor( np.load('./basics/mean_grid_roni.npy')).cuda()
@@ -383,41 +387,19 @@ def test():
     get3DLmarks_single_image(config.person)
     example_lmark = compute_RT_single(config.person)
     
-    example_lmark =torch.FloatTensor(example_lmark)
-    lip_region =  example_lmark[:, 48: ]
-    print (lip_region.shape)
-    lip_region = lip_region.view(1,-1)
-    
-    
-    other_region =  example_lmark[:, :48 ]
-    other_region = other_region.view(1,-1)
+    example_lmark =torch.FloatTensor(example_lmark).view(1,-1).cuda()
 
-    if config.cuda:
-        lip_region = lip_region.float().cuda()
-        other_region = other_region.float().cuda()
-    else:
-        lip_region = Variable(lip_region.float())
-        other_region = Variable(other_region.float())
+    example_lmark_pca = (example_lmark - mean.expand_as(example_lmark))
 
-    lip_region_pca = (lip_region- lip_mean.expand_as(lip_region))/lip_std
-    if config.pca:
-        lip_region_pca = torch.mm(lip_region_pca,  lip_pca)
-    lip_region_pca = lip_region_pca 
+    example_lmark_pca = torch.mm(example_lmark_pca, pca)
+
     
-    other_region_pca = (other_region - face_mean.expand_as(other_region))/face_std
-    if config.pca:
-        other_region_pca = torch.mm(other_region_pca,  face_pca)
-    other_region_pca = other_region_pca 
-    
-    lip_region_pca = Variable(lip_region_pca)
-    other_region_pca = Variable(other_region_pca)
-    
-    
+    example_lmark_pca = Variable(example_lmark_pca)
     
       
     if os.path.exists('./lmark'):
         shutil.rmtree('./lmark')
-        os.mkdir('./lmark')
+    os.mkdir('./lmark')
     if not os.path.exists('./lmark/real'):
         os.mkdir('./lmark/real')
     if not os.path.exists('./lmark/fake'):
@@ -455,22 +437,14 @@ def test():
             ind += 1
         input_mfcc = torch.stack(input_mfcc,dim = 0)
       
-        fake_lip, fake_face = encoder(input_mfcc,other_region_pca.repeat(input_mfcc.shape[0] ,1), lip_region_pca.repeat(input_mfcc.shape[0] ,1) )
+        fake_lmark = encoder(input_mfcc, example_lmark_pca.repeat(input_mfcc.shape[0] ,1) )
         if config.pca:
-            fake_lip =  fake_lip.view(fake_lip.size(0)  , 6)
-            fake_lip = torch.mm( fake_lip, lip_pca.t() ) 
+            fake_lmark =  fake_lmark.view(fake_lmark.size(0)  , 6)
+            fake_lmark = torch.mm( fake_lmark, pca.t() ) 
         else:
-            fake_lip =  fake_lip.view(fake_lip.size(0)  , 60)
-        fake_lip = fake_lip  * lip_std+ lip_mean.expand_as(fake_lip)
-        if config.pca:
-            fake_face =  fake_face.view(fake_face.size(0) , 6) 
-            fake_face = torch.mm( fake_face, face_pca.t() ) 
-        else:
-            fake_face =  fake_face.view(fake_face.size(0) , 144)
-        fake_face = fake_face * face_std+ face_mean.expand_as(fake_face)
-
-        fake_lmark = torch.cat([fake_face, fake_lip], 1)
-
+            fake_lmark =  fake_lmark.view(fake_lmark.size(0)  , 204)
+        fake_lmark += mean.expand_as(fake_lmark)
+        
         fake_lmark = fake_lmark.data.cpu().numpy()
         
         

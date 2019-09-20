@@ -38,8 +38,8 @@ def parse_args():
 config = parse_args()
 
 
-
-fa = face_alignment.FaceAlignment(face_alignment.LandmarksType._3D, flip_input=False)#,  device='cpu')
+root = '/data2/lchen63/voxceleb/'
+# fa = face_alignment.FaceAlignment(face_alignment.LandmarksType._3D, flip_input=False)#,  device='cpu')
 
 
 def get3DLmarks(frame_list, v_path):
@@ -562,38 +562,38 @@ def label_id():
 # label_id()        
 # clean_by_RT()    
 def compute_PCA():
-    _file = open( "/data2/lchen63/voxceleb/txt/train.pkl", "rb")
+    _file = open( os.path.join(root, "txt/train.pkl"),      "rb")
     train_data = pickle.load(_file)
+    random.shuffle(train_data)
+
     landmarks = []
     lmark_list = []
-    
+    k = 20
+    print (len(train_data))
     for index in range(len(train_data)):
-        if index == 2000:
+        if index == 100:
             break
         for i in range(len(train_data[index][2])):
-            lmark_path = os.path.join('/data2/lchen63/voxceleb/unzip', train_data[index][0], train_data[index][2][i] + '_front.npy' )
+            lmark_path = os.path.join(  root ,  'unzip', train_data[index][0], train_data[index][2][i] + '_front.npy' )
             t_lmark = np.load(lmark_path)
-            print (t_lmark.shape)
             if t_lmark.shape[0] < 64:
                 continue
-
+            t_lmark = t_lmark[:t_lmark.shape[0]:5,:,:]
             t_lmark = utils.smooth(t_lmark)
-            print (t_lmark.shape)
-            print ('=====')
+            t_lmark = torch.FloatTensor(t_lmark)
         lmark_list.append(t_lmark)
-    lmark_list = torch.stack(lmark_list,dim= 0)
-    print (lmark_list.shape)
-    lmark_list = lmark_list.view(lmark_list.size(0) *lmark_list.size(1) ,  68* 3)
+    lmark_list = torch.cat(lmark_list,dim= 0)
+    lmark_list = lmark_list.view(lmark_list.size(0) ,  68* 3)
     mean = torch.mean(lmark_list,0)
 
-    np.save('./basics/mean_front.npy', mean.numpy())
+    np.save('./basics/mean_front_smooth_vox.npy', mean.cpu().numpy())
     derivatives = lmark_list - mean.expand_as(lmark_list)
 
     U,S,V  = torch.svd(torch.t(lmark_list))
     
     print (U[:,:10])
     C = torch.mm(lmark_list, U[:,:k])
-    np.save('./basics/U_front.npy', U.numpy())
+    np.save('./basics/U_front_smooth_vox.npy', U.cpu().numpy())
 
 def compose_audio_lmark_dataset():
     root  = '/data2/lchen63/voxceleb'
@@ -844,17 +844,14 @@ def compose_lmark_face_dataset():
         
         
 def compose_front():
-    root  = '/home/cxu-serve/p1/lchen63/voxceleb'
     n = 68
     _file = open(os.path.join(root, 'txt' ,  "test_clean.pkl"), "rb")
     data = pickle.load(_file)
-    print (data)
     new_data = []
     # data= [['test_video/id03127/Zss2vvY2aLo',1254, ['00231']]]
-    for index in range(100):
-        if index == 10:
-            break
-        print (data[index])
+    for index in range(len(data)):
+        # if index == 10:
+        #     break
         tmp = data[index][0].split('/')
         if len(data[index][2]) ==1:
             f_lmark =  os.path.join(root, 'unzip',data[index][0], data[index][2][0] + '_front.npy' )
@@ -904,7 +901,6 @@ def compose_front():
                 lmark_length = lmark.shape[0]
                 find_rt = []
                 for t in range(0, lmark_length):
-                    print (rt[t])
                     find_rt.append(sum(np.absolute(rt[t,:3])))
 
                     ret, frame = cap.read()

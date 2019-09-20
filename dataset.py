@@ -159,6 +159,577 @@ def rigid_transform_3D(A, B):
 
     return R, t
 
+
+
+class Voxceleb_lmark_rgb_single(data.Dataset):
+    def __init__(self,
+                 dataset_dir,
+                 train='train',
+                 gan = True):
+        self.train = train
+        self.gan = gan
+        self.output_shape   = tuple([256, 256])
+        self.num_frames = 64  
+        self.root  = '/home/cxu-serve/p1/lchen63/voxceleb/'      
+        if self.train=='train':
+            _file = open(os.path.join(dataset_dir, "lmark_video_test_clean_new.pkl"), "rb")
+            self.data = pickle.load(_file)
+            _file.close()
+        elif self.train =='test':
+            _file = open(os.path.join(dataset_dir, "lmark_video_test_clean_new.pkl"), "rb")
+            self.data = pickle.load(_file)
+            _file.close()
+            
+        self.transform = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
+        ])
+
+#         self.consider_key = [1,2,3,4,5,11,12,13,14,15,27,28,29,30,31,32,33,34,35,39,42,36,45,17,21,22,26]
+    def __getitem__(self, index):
+#         try:
+            tmp = self.data[index][0].split('/')
+           
+            
+            lmark = np.load( os.path.join(self.root, 'unzip', self.data[index][0] + '.npy' ))
+            length = lmark.shape[0]
+            lmark = utils.smooth(lmark)
+            lmark = torch.FloatTensor(lmark)
+
+            
+            example_id  = self.data[index][2]
+            sample_id = self.data[index][1]
+            if self.gan:
+                while True:
+                    other_id = np.random.choice([0, length - 1])
+                    if other_id != sample_id:
+                        break
+                
+            lip_base = torch.FloatTensor(3,256, 256)
+            
+            lmark_base = torch.FloatTensor(68,2)
+            video_path =  os.path.join('/data2/lchen63/voxceleb/unzip/',self.data[index][0]+  '.mp4')
+            cap = cv2.VideoCapture(video_path)
+            for t in range(length):
+                ret, frame = cap.read()
+                if ret :
+                    if self.gan and other_id == t:
+                        mismatch_img = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                        mismatch_img = cv2.resize(mismatch_img, self.output_shape)
+                        mismatch_img = self.transform(mismatch_img)
+                    if t == sample_id:
+                        gt_img = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                        gt_img = cv2.resize(gt_img, self.output_shape)
+                        gt_img = self.transform(gt_img)
+                    if t == example_id:
+                        img = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                        img = cv2.resize(img, self.output_shape)
+                        lip = self.transform(img)
+                        lip_base = lip
+                        lmark_base = lmark[t,:, :-1]
+                    
+            input_lmark = lmark[sample_id,:, :-1]
+            input_dict = {'in_lmark': input_lmark ,'lmark_base': lmark_base,  'lip_base': lip_base, 'gt_img': gt_img, 'mismatch_img': mismatch_img}
+            return (input_dict)   
+            
+
+
+
+
+
+
+
+
+
+
+
+
+
+class Voxceleb_audio_lmark_single(data.Dataset):
+    def __init__(self,
+                 dataset_dir,
+                 train='train',
+                 gan = True):
+        self.train = train  
+        self.root  = '/home/cxu-serve/p1/lchen63/voxceleb/' 
+        # self.lip_pca = torch.FloatTensor( np.load('./basics/U_front.npy')[:,:6])#.cuda()
+        # self.lip_mean =torch.FloatTensor( np.load('./basics/mean_front.npy'))#.cuda()
+                
+        # self.other_pca = torch.FloatTensor( np.load('./basics/U_front_roni.npy')[:,:6])#.cuda()
+        # self.other_mean =torch.FloatTensor( np.load('./basics/mean_front_roni.npy'))#.cuda()
+        
+        if self.train=='train':
+            _file = open(os.path.join(dataset_dir, "test_clean_new.pkl"), "rb")
+            self.data = pickle.load(_file)
+            _file.close()
+        elif self.train =='test':
+            _file = open(os.path.join(dataset_dir, "test_clean_new.pkl"), "rb")
+            self.data = pickle.load(_file)
+            _file.close()
+            
+        self.transform = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
+        ])
+
+        self.consider_key = [1,2,3,4,5,11,12,13,14,15,27,28,29,30,31,32,33,34,35,39,42,36,45,17,21,22,26]
+    def __getitem__(self, index):
+#         try:
+            tmp = self.data[index][0].split('/')
+            lmark = np.load( os.path.join(self.root, 'unzip', self.data[index][0] + '_front.npy' ))
+            if self.train == 'train':
+                audio_path = os.path.join(self.root, 'unzip', 'test_audio' , tmp[1],tmp[2], tmp[3] +'.npy' )
+            else:
+                audio_path = os.path.join(self.root, 'unzip', 'test_audio' , tmp[1],tmp[2], tmp[3] +'.npy' )
+                rts = np.load(os.path.join(self.root, 'unzip', self.data[index][0] + '_sRT.npy' ))
+            audio = np.load(audio_path)
+            sample_id = self.data[index][1]
+            lmark_length = lmark.shape[0]
+            audio_length = audio.shape[0]
+            lmark = utils.smooth(lmark)
+            audio_pad = np.zeros((lmark.shape[0] * 4, 13))
+            if audio_length < lmark_length * 4 :
+                audio_pad[:audio_length] = audio
+                audio = audio_pad
+            
+           
+            if sample_id < 3:
+                sample_audio = np.zeros((28,12))
+                sample_audio[4 * (3- sample_id): ] = audio[4 * (0) : 4 * ( 3 + sample_id + 1 ), 1: ]
+
+            elif sample_id > lmark_length - 4:
+                sample_audio = np.zeros((28,12))
+                sample_audio[:4 * ( lmark_length + 3 - sample_id )] = audio[4 * (sample_id -3) : 4 * ( lmark_length ), 1: ]
+
+            else:
+                sample_audio = audio[4 * (sample_id -3) : 4 * ( sample_id + 4 ) , 1: ]
+            
+            sample_lmark = lmark[sample_id]
+            sample_audio =torch.FloatTensor(sample_audio)
+            sample_lmark =torch.FloatTensor(sample_lmark)            
+            sample_lmark = sample_lmark.view(-1)
+
+    
+            ex_id = self.data[index][2]
+            ex_lmark = lmark[ex_id]
+            ex_lmark =torch.FloatTensor(ex_lmark)
+            
+            ex_lmark = ex_lmark.view(-1)
+            
+            # input_dict = {'audio': sample_audio , 'lip_region': lip_region, 'other_region': other_region, 'ex_other_region':ex_other_region,'ex_lip_region':ex_lip_region,   'img_path': self.data[index][0], 'sample_id' : sample_id, 'sample_rt': rts[sample_id] if self.train == 'test' else 1}
+            input_dict = {'audio': sample_audio , 'sample_lmark': sample_lmark, 'ex_lmark': ex_lmark,   'img_path': self.data[index][0], 'sample_id' : sample_id, 'sample_rt': rts[sample_id] if self.train == 'test' else 1}
+
+            return (input_dict)   
+#         except:
+#             return self.__getitem__((index + 1)% len(self.data))
+    def __len__(self):
+        
+            return len(self.data)        
+
+
+
+class Voxceleb_audio_lmark_single_short(data.Dataset):
+    def __init__(self,
+                 dataset_dir,
+                 train='train',
+                 gan = True):
+        self.train = train  
+        self.root  = '/data2/lchen63/voxceleb/' 
+        self.lip_pca = torch.FloatTensor( np.load('./basics/U_front.npy')[:,:6])#.cuda()
+        self.lip_mean =torch.FloatTensor( np.load('./basics/mean_front.npy'))#.cuda()
+                
+        self.other_pca = torch.FloatTensor( np.load('./basics/U_front_roni.npy')[:,:6])#.cuda()
+        self.other_mean =torch.FloatTensor( np.load('./basics/mean_front_roni.npy'))#.cuda()
+        
+        if self.train=='train':
+            _file = open(os.path.join(dataset_dir, "train2_clean_new.pkl"), "rb")
+            self.data = pickle.load(_file)
+            _file.close()
+        elif self.train =='test':
+            _file = open(os.path.join(dataset_dir, "test_clean_new.pkl"), "rb")
+            self.data = pickle.load(_file)
+            _file.close()
+            
+        self.transform = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
+        ])
+
+        self.consider_key = [1,2,3,4,5,11,12,13,14,15,27,28,29,30,31,32,33,34,35,39,42,36,45,17,21,22,26]
+    def __getitem__(self, index):
+#         try:
+            tmp = self.data[index][0].split('/')
+            lmark = np.load( os.path.join(self.root, 'unzip', self.data[index][0] + '_front.npy' ))
+            if self.train == 'train':
+                audio_path = os.path.join(self.root, 'unzip', 'dev_audio' , tmp[1],tmp[2], tmp[3] +'.npy' )
+            else:
+                audio_path = os.path.join(self.root, 'unzip', 'test_audio' , tmp[1],tmp[2], tmp[3] +'.npy' )
+                rts = np.load(os.path.join(self.root, 'unzip', self.data[index][0] + '_sRT.npy' ))
+            audio = np.load(audio_path)
+            sample_id = self.data[index][1]
+            lmark_length = lmark.shape[0]
+            audio_length = audio.shape[0]
+            audio_pad = np.zeros((lmark.shape[0] * 4, 13))
+            if audio_length < lmark_length * 4 :
+                audio_pad[:audio_length] = audio
+                audio = audio_pad
+            
+           
+            if sample_id < 1:
+                sample_audio = np.zeros((12,12))
+                sample_audio[4 * (1- sample_id): ] = audio[4 * (0) : 4 * ( 1 + sample_id + 1 ), 1: ]
+
+            elif sample_id > lmark_length - 2:
+                sample_audio = np.zeros((12,12))
+                sample_audio[:4 * ( lmark_length + 1 - sample_id )] = audio[4 * (sample_id  - 1) : 4 * ( lmark_length ), 1: ]
+
+            else:
+                sample_audio = audio[4 * (sample_id -1) : 4 * ( sample_id + 2 ) , 1: ]
+
+            sample_lmark = lmark[sample_id]
+            sample_audio =torch.FloatTensor(sample_audio)
+            sample_lmark =torch.FloatTensor(sample_lmark)
+            lip_region =  sample_lmark[ 48: ]
+            lip_region = lip_region.view(-1)
+
+            other_region =  sample_lmark[ :48 ]
+            other_region = other_region.view( -1)
+            ex_id = self.data[index][2]
+            ex_lmark = lmark[ex_id]
+            ex_lmark =torch.FloatTensor(ex_lmark)
+            
+            ex_other_region =  ex_lmark[:48 ]
+            ex_other_region = ex_other_region.view(-1)
+            
+            ex_lip_region =  ex_lmark[48: ]
+            ex_lip_region = ex_lip_region.view(-1)            
+            input_dict = {'audio': sample_audio , 'lip_region': lip_region, 'other_region': other_region, 'ex_other_region':ex_other_region,'ex_lip_region':ex_lip_region,   'img_path': self.data[index][0], 'sample_id' : sample_id, 'sample_rt': rts[sample_id] if self.train == 'test' else 1}
+#             print (img_id)
+#             print ('========')
+            return (input_dict)   
+#         except:
+#             return self.__getitem__((index + 1)% len(self.data))
+    def __len__(self):
+        
+            return len(self.data)           
+        
+class Voxceleb_audio_lmark_lstm(data.Dataset):
+    def __init__(self,
+                 dataset_dir,
+                 train='train',
+                 gan = True):
+        self.train = train 
+        self.time_length = 32
+        self.root  = '/data2/lchen63/voxceleb/' 
+        self.lip_pca = torch.FloatTensor( np.load('./basics/U_front.npy')[:,:6])#.cuda()
+        self.lip_mean =torch.FloatTensor( np.load('./basics/mean_front.npy'))#.cuda()
+                
+        self.other_pca = torch.FloatTensor( np.load('./basics/U_front_roni.npy')[:,:6])#.cuda()
+        self.other_mean =torch.FloatTensor( np.load('./basics/mean_front_roni.npy'))#.cuda()
+        
+        if self.train=='train':
+            _file = open(os.path.join(dataset_dir, "train2_clean_lstm.pkl"), "rb")
+            self.data = pickle.load(_file)
+            _file.close()
+        elif self.train =='test':
+            _file = open(os.path.join(dataset_dir, "test_clean_lstm.pkl"), "rb")
+            self.data = pickle.load(_file)
+            _file.close()
+            
+        self.transform = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
+        ])
+
+        self.consider_key = [1,2,3,4,5,11,12,13,14,15,27,28,29,30,31,32,33,34,35,39,42,36,45,17,21,22,26]
+    def __getitem__(self, index):
+#         try:
+            tmp = self.data[index][0].split('/')
+            lmark = np.load( os.path.join(self.root, 'unzip', self.data[index][0] + '_front.npy' ))
+            if self.train == 'train':
+                audio_path = os.path.join(self.root, 'unzip', 'dev_audio' , tmp[1],tmp[2], tmp[3] +'.npy' )
+            else:
+                audio_path = os.path.join(self.root, 'unzip', 'test_audio' , tmp[1],tmp[2], tmp[3] +'.npy' )
+                rts = np.load(os.path.join(self.root, 'unzip', self.data[index][0] + '_sRT.npy' ))
+            audio = np.load(audio_path)
+            start_id = self.data[index][1]
+            lmark_length = lmark.shape[0]
+            audio_length = audio.shape[0]
+            audio_pad = np.zeros((lmark.shape[0] * 4, 13))
+            if audio_length < lmark_length * 4 :
+                audio_pad[:audio_length] = audio
+                audio = audio_pad
+            
+            lmarks = torch.zeros((self.time_length,68,3),dtype=torch.float32)
+            audios = torch.zeros((self.time_length,28,12),dtype=torch.float32)
+            for t in range(self.time_length):
+                sample_id = start_id + t
+            
+                if sample_id < 3:
+                    sample_audio = np.zeros((28,12))
+                    sample_audio[4 * (3- sample_id): ] = audio[4 * (0) : 4 * ( 3 + sample_id + 1 ), 1: ]
+
+                elif sample_id > lmark_length - 4:
+                    sample_audio = np.zeros((28,12))
+                    sample_audio[:4 * ( lmark_length + 3 - sample_id )] = audio[4 * (sample_id -3) : 4 * ( lmark_length ), 1: ]
+
+                else:
+                    sample_audio = audio[4 * (sample_id -3) : 4 * ( sample_id + 4 ) , 1: ]
+                
+                sample_lmark = lmark[sample_id]
+                sample_audio =torch.FloatTensor(sample_audio)
+                sample_lmark =torch.FloatTensor(sample_lmark)
+                
+                lmarks[t] = sample_lmark
+                audios[t] = sample_audio
+                
+                
+            lip_region =  lmarks[:, 48: ]
+            lip_region = lip_region.view(self.time_length, -1)
+
+            other_region =  lmarks[:,  :48 ]
+            other_region = other_region.view(self.time_length, -1)
+
+            
+            ex_id =self.data[index][2]
+            ex_lmark = lmark[ex_id]
+            ex_lmark =torch.FloatTensor(ex_lmark)
+            
+            ex_other_region =  ex_lmark[:48 ]
+            ex_other_region = ex_other_region.view(-1)
+            
+            ex_lip_region =  ex_lmark[48: ]
+            ex_lip_region = ex_lip_region.view(-1)
+
+            
+            input_dict = {'audio': audios , 'lip_region': lip_region, 'other_region': other_region, 'ex_other_region':ex_other_region,'ex_lip_region':ex_lip_region,   'img_path': self.data[index][0], 'sample_id' : start_id, 'sample_rt': rts[sample_id] if self.train == 'test' else 1 }
+            return (input_dict)   
+#         except:
+#             return self.__getitem__((index + 1)% len(self.data))
+    def __len__(self):
+        
+            return len(self.data)          
+class Grid_audio_lmark_single(data.Dataset):
+    def __init__(self,
+                 dataset_dir,
+                 train='train',
+                 gan = True):
+        self.train = train  
+        self.root  = '/data/lchen63/grid/zip/' 
+     
+        if self.train=='train':
+            _file = open(os.path.join(dataset_dir, "train_clean_new.pkl"), "rb")
+            self.data = pickle.load(_file)
+            _file.close()
+        elif self.train =='test':
+            _file = open(os.path.join(dataset_dir, "test_clean_new.pkl"), "rb")
+            self.data = pickle.load(_file)
+            _file.close()
+            
+        self.transform = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
+        ])
+
+        self.consider_key = [1,2,3,4,5,11,12,13,14,15,27,28,29,30,31,32,33,34,35,39,42,36,45,17,21,22,26]
+    def __getitem__(self, index):
+            lmark = np.load( self.data[index][0][:-4] + '_front.npy' )
+            audio_path = os.path.join(self.root, 'audio', self.data[index][-1] + '_16k.npy' )
+            audio = np.load(audio_path)
+            sample_id = self.data[index][1]
+            lmark_length = lmark.shape[0]
+            lmark = utils.smooth(lmark)
+            audio_length = audio.shape[0]
+            audio_pad = np.zeros((lmark.shape[0] * 4, 13))
+            if audio_length < lmark_length * 4 :
+                audio_pad[:audio_length] = audio
+                audio = audio_pad
+                      
+            if sample_id < 3:
+                sample_audio = np.zeros((28,12))
+                sample_audio[4 * (3- sample_id): ] = audio[4 * (0) : 4 * ( 3 + sample_id + 1 ), 1: ]
+
+            elif sample_id > lmark_length - 4:
+                sample_audio = np.zeros((28,12))
+                sample_audio[:4 * ( lmark_length + 3 - sample_id )] = audio[4 * (sample_id -3) : 4 * ( lmark_length ), 1: ]
+
+            else:
+                sample_audio = audio[4 * (sample_id -3) : 4 * ( sample_id + 4 ) , 1: ]
+            
+            sample_lmark = lmark[sample_id]
+            sample_audio =torch.FloatTensor(sample_audio)
+            sample_lmark =torch.FloatTensor(sample_lmark)
+            lip_region =  sample_lmark[ 48: ]
+            lip_region = lip_region.view(-1)
+
+            other_region =  sample_lmark[ :48 ]
+            other_region = other_region.view( -1)
+    
+            ex_id = self.data[index][2]
+            ex_lmark = lmark[ex_id]
+            ex_lmark =torch.FloatTensor(ex_lmark)
+            
+            ex_other_region =  ex_lmark[:48 ]
+            ex_other_region = ex_other_region.view(-1)
+            
+            ex_lip_region =  ex_lmark[48: ]
+            ex_lip_region = ex_lip_region.view(-1)
+            img_path =  os.path.join(self.root, 'img', self.data[index][-1] , '%05d.png'%(sample_id +1) )
+            input_dict = {'audio': sample_audio , 'lip_region': lip_region, 'other_region': other_region, 'ex_other_region':ex_other_region,'ex_lip_region':ex_lip_region,   'img_path': img_path , 'sample_id' : sample_id}
+#             print (img_id)
+#             print ('========')
+            return (input_dict)   
+#         except:
+#             return self.__getitem__((index + 1)% len(self.data))
+    def __len__(self):
+        
+            return len(self.data)        
+
+
+class Grid_audio_lmark_single_whole(data.Dataset):
+    def __init__(self,
+                 dataset_dir,
+                 train='train',
+                 gan = True):
+        self.train = train  
+        self.root  = '/data/lchen63/grid/zip/' 
+     
+        if self.train=='train':
+            _file = open(os.path.join(dataset_dir, "train_clean_new.pkl"), "rb")
+            self.data = pickle.load(_file)
+            _file.close()
+        elif self.train =='test':
+            _file = open(os.path.join(dataset_dir, "test_clean_new.pkl"), "rb")
+            self.data = pickle.load(_file)
+            _file.close()
+            
+        self.transform = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
+        ])
+
+        self.consider_key = [1,2,3,4,5,11,12,13,14,15,27,28,29,30,31,32,33,34,35,39,42,36,45,17,21,22,26]
+    def __getitem__(self, index):
+            lmark = np.load( self.data[index][0][:-4] + '_front_norm.npy' )
+            audio_path = os.path.join(self.root, 'audio', self.data[index][-1] + '_16k.npy' )
+            audio = np.load(audio_path)
+            sample_id = self.data[index][1]
+            lmark_length = lmark.shape[0]
+            audio_length = audio.shape[0]
+            audio_pad = np.zeros((lmark.shape[0] * 4, 13))
+            if audio_length < lmark_length * 4 :
+                audio_pad[:audio_length] = audio
+                audio = audio_pad
+                      
+            if sample_id < 3:
+                sample_audio = np.zeros((28,12))
+                sample_audio[4 * (3- sample_id): ] = audio[4 * (0) : 4 * ( 3 + sample_id + 1 ), 1: ]
+
+            elif sample_id > lmark_length - 4:
+                sample_audio = np.zeros((28,12))
+                sample_audio[:4 * ( lmark_length + 3 - sample_id )] = audio[4 * (sample_id -3) : 4 * ( lmark_length ), 1: ]
+
+            else:
+                sample_audio = audio[4 * (sample_id -3) : 4 * ( sample_id + 4 ) , 1: ]
+            
+            sample_lmark = lmark[sample_id]
+            sample_audio =torch.FloatTensor(sample_audio)
+            sample_lmark =torch.FloatTensor(sample_lmark)
+            
+            target_lmark  = sample_lmark.view( -1)
+    
+            ex_id = self.data[index][2]
+            ex_lmark = lmark[ex_id]
+            ex_lmark =torch.FloatTensor(ex_lmark)
+            ex_lmark = ex_lmark.view(-1)
+            img_path =  os.path.join(self.root, 'img', self.data[index][-1] , '%05d.png'%(sample_id +1) )
+            input_dict = {'audio': sample_audio , 'target_lmark': target_lmark,'ex_lmark':ex_lmark,   'img_path': img_path , 'sample_id' : sample_id}
+#             print (img_id)
+#             print ('========')
+            return (input_dict)   
+#         except:
+#             return self.__getitem__((index + 1)% len(self.data))
+    def __len__(self):
+        
+            return len(self.data)         
+
+        
+class Voxceleb_face_region_single(data.Dataset):
+    def __init__(self,
+                 dataset_dir,
+                 train='train',
+                 gan = True):
+        self.train = train
+        self.gan = gan
+        self.output_shape   = tuple([256, 256])
+        self.num_frames = 64  
+        self.root  = '/data2/lchen63/voxceleb/'      
+        if self.train=='train':
+            _file = open(os.path.join(dataset_dir, "lmark_video_train2_clean_new.pkl"), "rb")
+            self.data = pickle.load(_file)
+            _file.close()
+        elif self.train =='test':
+            _file = open(os.path.join(dataset_dir, "lmark_video_test_clean_new.pkl"), "rb")
+            self.data = pickle.load(_file)
+            _file.close()
+            
+        self.transform = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
+        ])
+
+#         self.consider_key = [1,2,3,4,5,11,12,13,14,15,27,28,29,30,31,32,33,34,35,39,42,36,45,17,21,22,26]
+    def __getitem__(self, index):
+#         try:
+            tmp = self.data[index][0].split('/')
+           
+            
+            lmark = np.load( os.path.join(self.root, 'unzip', self.data[index][0] + '.npy' ))
+            length = lmark.shape[0]
+            
+            lmark = torch.FloatTensor(lmark)
+            
+            example_id  = self.data[index][2]
+            sample_id = self.data[index][1]
+            if self.gan:
+                while True:
+                    other_id = np.random.choice([0, length - 1])
+                    if other_id != sample_id:
+                        break
+                
+            lip_base = torch.FloatTensor(3,256, 256)
+            
+            lmark_base = torch.FloatTensor(68,2)
+            video_path =  os.path.join('/data2/lchen63/voxceleb/unzip/',self.data[index][0]+  '.mp4')
+            cap = cv2.VideoCapture(video_path)
+            for t in range(length):
+                ret, frame = cap.read()
+                if ret :
+                    if self.gan and other_id == t:
+                        mismatch_img = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                        mismatch_img = cv2.resize(mismatch_img, self.output_shape)
+                        mismatch_img = self.transform(mismatch_img)
+                    if t == sample_id:
+                        gt_img = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                        gt_img = cv2.resize(gt_img, self.output_shape)
+                        gt_img = self.transform(gt_img)
+                    if t == example_id:
+                        img = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                        img = cv2.resize(img, self.output_shape)
+                        lip = self.transform(img)
+                        lip_base = lip
+                        lmark_base = lmark[t,:, :-1]
+                    
+            input_lmark = lmark[sample_id,:, :-1]
+            input_dict = {'in_lmark': input_lmark ,'lmark_base': lmark_base,  'lip_base': lip_base, 'gt_img': gt_img, 'mismatch_img': mismatch_img}
+            return (input_dict)   
+            
+#         except:
+#             return self.__getitem__((index + 1)% len(self.data))
+    def __len__(self):
+        
+            return len(self.data)  
+
 class Voxceleb_head_movements_RT(data.Dataset):
     def __init__(self,
                  dataset_dir,
@@ -384,498 +955,6 @@ class Voxceleb_face_region(data.Dataset):
             return len(self.data)    
         
 
-
-class Voxceleb_audio_lmark_single(data.Dataset):
-    def __init__(self,
-                 dataset_dir,
-                 train='train',
-                 gan = True):
-        self.train = train  
-        self.root  = '/data2/lchen63/voxceleb/' 
-        self.lip_pca = torch.FloatTensor( np.load('./basics/U_front.npy')[:,:6])#.cuda()
-        self.lip_mean =torch.FloatTensor( np.load('./basics/mean_front.npy'))#.cuda()
-                
-        self.other_pca = torch.FloatTensor( np.load('./basics/U_front_roni.npy')[:,:6])#.cuda()
-        self.other_mean =torch.FloatTensor( np.load('./basics/mean_front_roni.npy'))#.cuda()
-        
-        if self.train=='train':
-            _file = open(os.path.join(dataset_dir, "train2_clean_new.pkl"), "rb")
-            self.data = pickle.load(_file)
-            _file.close()
-        elif self.train =='test':
-            _file = open(os.path.join(dataset_dir, "test_clean_new.pkl"), "rb")
-            self.data = pickle.load(_file)
-            _file.close()
-            
-        self.transform = transforms.Compose([
-            transforms.ToTensor(),
-            transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
-        ])
-
-        self.consider_key = [1,2,3,4,5,11,12,13,14,15,27,28,29,30,31,32,33,34,35,39,42,36,45,17,21,22,26]
-    def __getitem__(self, index):
-#         try:
-            tmp = self.data[index][0].split('/')
-            lmark = np.load( os.path.join(self.root, 'unzip', self.data[index][0] + '_front.npy' ))
-            
-            
-            
-            if self.train == 'train':
-                audio_path = os.path.join(self.root, 'unzip', 'dev_audio' , tmp[1],tmp[2], tmp[3] +'.npy' )
-            else:
-                audio_path = os.path.join(self.root, 'unzip', 'test_audio' , tmp[1],tmp[2], tmp[3] +'.npy' )
-                rts = np.load(os.path.join(self.root, 'unzip', self.data[index][0] + '_sRT.npy' ))
-            audio = np.load(audio_path)
-            sample_id = self.data[index][1]
-            lmark_length = lmark.shape[0]
-            audio_length = audio.shape[0]
-            audio_pad = np.zeros((lmark.shape[0] * 4, 13))
-            if audio_length < lmark_length * 4 :
-                audio_pad[:audio_length] = audio
-                audio = audio_pad
-            
-           
-            if sample_id < 3:
-                sample_audio = np.zeros((28,12))
-                sample_audio[4 * (3- sample_id): ] = audio[4 * (0) : 4 * ( 3 + sample_id + 1 ), 1: ]
-
-            elif sample_id > lmark_length - 4:
-                sample_audio = np.zeros((28,12))
-                sample_audio[:4 * ( lmark_length + 3 - sample_id )] = audio[4 * (sample_id -3) : 4 * ( lmark_length ), 1: ]
-
-            else:
-                sample_audio = audio[4 * (sample_id -3) : 4 * ( sample_id + 4 ) , 1: ]
-            
-            sample_lmark = lmark[sample_id]
-            sample_audio =torch.FloatTensor(sample_audio)
-            sample_lmark =torch.FloatTensor(sample_lmark)
-            lip_region =  sample_lmark[ 48: ]
-            lip_region = lip_region.view(-1)
-
-            other_region =  sample_lmark[ :48 ]
-            other_region = other_region.view( -1)
-    
-            ex_id = self.data[index][2]
-            ex_lmark = lmark[ex_id]
-            ex_lmark =torch.FloatTensor(ex_lmark)
-            
-            ex_other_region =  ex_lmark[:48 ]
-            ex_other_region = ex_other_region.view(-1)
-            
-            ex_lip_region =  ex_lmark[48: ]
-            ex_lip_region = ex_lip_region.view(-1)            
-            input_dict = {'audio': sample_audio , 'lip_region': lip_region, 'other_region': other_region, 'ex_other_region':ex_other_region,'ex_lip_region':ex_lip_region,   'img_path': self.data[index][0], 'sample_id' : sample_id, 'sample_rt': rts[sample_id] if self.train == 'test' else 1}
-#             print (img_id)
-#             print ('========')
-            return (input_dict)   
-#         except:
-#             return self.__getitem__((index + 1)% len(self.data))
-    def __len__(self):
-        
-            return len(self.data)        
-
-
-
-class Voxceleb_audio_lmark_single_short(data.Dataset):
-    def __init__(self,
-                 dataset_dir,
-                 train='train',
-                 gan = True):
-        self.train = train  
-        self.root  = '/data2/lchen63/voxceleb/' 
-        self.lip_pca = torch.FloatTensor( np.load('./basics/U_front.npy')[:,:6])#.cuda()
-        self.lip_mean =torch.FloatTensor( np.load('./basics/mean_front.npy'))#.cuda()
-                
-        self.other_pca = torch.FloatTensor( np.load('./basics/U_front_roni.npy')[:,:6])#.cuda()
-        self.other_mean =torch.FloatTensor( np.load('./basics/mean_front_roni.npy'))#.cuda()
-        
-        if self.train=='train':
-            _file = open(os.path.join(dataset_dir, "train2_clean_new.pkl"), "rb")
-            self.data = pickle.load(_file)
-            _file.close()
-        elif self.train =='test':
-            _file = open(os.path.join(dataset_dir, "test_clean_new.pkl"), "rb")
-            self.data = pickle.load(_file)
-            _file.close()
-            
-        self.transform = transforms.Compose([
-            transforms.ToTensor(),
-            transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
-        ])
-
-        self.consider_key = [1,2,3,4,5,11,12,13,14,15,27,28,29,30,31,32,33,34,35,39,42,36,45,17,21,22,26]
-    def __getitem__(self, index):
-#         try:
-            tmp = self.data[index][0].split('/')
-            lmark = np.load( os.path.join(self.root, 'unzip', self.data[index][0] + '_front.npy' ))
-            if self.train == 'train':
-                audio_path = os.path.join(self.root, 'unzip', 'dev_audio' , tmp[1],tmp[2], tmp[3] +'.npy' )
-            else:
-                audio_path = os.path.join(self.root, 'unzip', 'test_audio' , tmp[1],tmp[2], tmp[3] +'.npy' )
-                rts = np.load(os.path.join(self.root, 'unzip', self.data[index][0] + '_sRT.npy' ))
-            audio = np.load(audio_path)
-            sample_id = self.data[index][1]
-            lmark_length = lmark.shape[0]
-            audio_length = audio.shape[0]
-            audio_pad = np.zeros((lmark.shape[0] * 4, 13))
-            if audio_length < lmark_length * 4 :
-                audio_pad[:audio_length] = audio
-                audio = audio_pad
-            
-           
-            if sample_id < 1:
-                sample_audio = np.zeros((12,12))
-                sample_audio[4 * (1- sample_id): ] = audio[4 * (0) : 4 * ( 1 + sample_id + 1 ), 1: ]
-
-            elif sample_id > lmark_length - 2:
-                sample_audio = np.zeros((12,12))
-                sample_audio[:4 * ( lmark_length + 1 - sample_id )] = audio[4 * (sample_id  - 1) : 4 * ( lmark_length ), 1: ]
-
-            else:
-                sample_audio = audio[4 * (sample_id -1) : 4 * ( sample_id + 2 ) , 1: ]
-
-            sample_lmark = lmark[sample_id]
-            sample_audio =torch.FloatTensor(sample_audio)
-            sample_lmark =torch.FloatTensor(sample_lmark)
-            lip_region =  sample_lmark[ 48: ]
-            lip_region = lip_region.view(-1)
-
-            other_region =  sample_lmark[ :48 ]
-            other_region = other_region.view( -1)
-            ex_id = self.data[index][2]
-            ex_lmark = lmark[ex_id]
-            ex_lmark =torch.FloatTensor(ex_lmark)
-            
-            ex_other_region =  ex_lmark[:48 ]
-            ex_other_region = ex_other_region.view(-1)
-            
-            ex_lip_region =  ex_lmark[48: ]
-            ex_lip_region = ex_lip_region.view(-1)            
-            input_dict = {'audio': sample_audio , 'lip_region': lip_region, 'other_region': other_region, 'ex_other_region':ex_other_region,'ex_lip_region':ex_lip_region,   'img_path': self.data[index][0], 'sample_id' : sample_id, 'sample_rt': rts[sample_id] if self.train == 'test' else 1}
-#             print (img_id)
-#             print ('========')
-            return (input_dict)   
-#         except:
-#             return self.__getitem__((index + 1)% len(self.data))
-    def __len__(self):
-        
-            return len(self.data)           
-        
-class Voxceleb_audio_lmark_lstm(data.Dataset):
-    def __init__(self,
-                 dataset_dir,
-                 train='train',
-                 gan = True):
-        self.train = train 
-        self.time_length = 32
-        self.root  = '/data2/lchen63/voxceleb/' 
-        self.lip_pca = torch.FloatTensor( np.load('./basics/U_front.npy')[:,:6])#.cuda()
-        self.lip_mean =torch.FloatTensor( np.load('./basics/mean_front.npy'))#.cuda()
-                
-        self.other_pca = torch.FloatTensor( np.load('./basics/U_front_roni.npy')[:,:6])#.cuda()
-        self.other_mean =torch.FloatTensor( np.load('./basics/mean_front_roni.npy'))#.cuda()
-        
-        if self.train=='train':
-            _file = open(os.path.join(dataset_dir, "train2_clean_lstm.pkl"), "rb")
-            self.data = pickle.load(_file)
-            _file.close()
-        elif self.train =='test':
-            _file = open(os.path.join(dataset_dir, "test_clean_lstm.pkl"), "rb")
-            self.data = pickle.load(_file)
-            _file.close()
-            
-        self.transform = transforms.Compose([
-            transforms.ToTensor(),
-            transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
-        ])
-
-        self.consider_key = [1,2,3,4,5,11,12,13,14,15,27,28,29,30,31,32,33,34,35,39,42,36,45,17,21,22,26]
-    def __getitem__(self, index):
-#         try:
-            tmp = self.data[index][0].split('/')
-            lmark = np.load( os.path.join(self.root, 'unzip', self.data[index][0] + '_front.npy' ))
-            if self.train == 'train':
-                audio_path = os.path.join(self.root, 'unzip', 'dev_audio' , tmp[1],tmp[2], tmp[3] +'.npy' )
-            else:
-                audio_path = os.path.join(self.root, 'unzip', 'test_audio' , tmp[1],tmp[2], tmp[3] +'.npy' )
-                rts = np.load(os.path.join(self.root, 'unzip', self.data[index][0] + '_sRT.npy' ))
-            audio = np.load(audio_path)
-            start_id = self.data[index][1]
-            lmark_length = lmark.shape[0]
-            audio_length = audio.shape[0]
-            audio_pad = np.zeros((lmark.shape[0] * 4, 13))
-            if audio_length < lmark_length * 4 :
-                audio_pad[:audio_length] = audio
-                audio = audio_pad
-            
-            lmarks = torch.zeros((self.time_length,68,3),dtype=torch.float32)
-            audios = torch.zeros((self.time_length,28,12),dtype=torch.float32)
-            for t in range(self.time_length):
-                sample_id = start_id + t
-            
-                if sample_id < 3:
-                    sample_audio = np.zeros((28,12))
-                    sample_audio[4 * (3- sample_id): ] = audio[4 * (0) : 4 * ( 3 + sample_id + 1 ), 1: ]
-
-                elif sample_id > lmark_length - 4:
-                    sample_audio = np.zeros((28,12))
-                    sample_audio[:4 * ( lmark_length + 3 - sample_id )] = audio[4 * (sample_id -3) : 4 * ( lmark_length ), 1: ]
-
-                else:
-                    sample_audio = audio[4 * (sample_id -3) : 4 * ( sample_id + 4 ) , 1: ]
-                
-                sample_lmark = lmark[sample_id]
-                sample_audio =torch.FloatTensor(sample_audio)
-                sample_lmark =torch.FloatTensor(sample_lmark)
-                
-                lmarks[t] = sample_lmark
-                audios[t] = sample_audio
-                
-                
-            lip_region =  lmarks[:, 48: ]
-            lip_region = lip_region.view(self.time_length, -1)
-
-            other_region =  lmarks[:,  :48 ]
-            other_region = other_region.view(self.time_length, -1)
-
-            
-            ex_id =self.data[index][2]
-            ex_lmark = lmark[ex_id]
-            ex_lmark =torch.FloatTensor(ex_lmark)
-            
-            ex_other_region =  ex_lmark[:48 ]
-            ex_other_region = ex_other_region.view(-1)
-            
-            ex_lip_region =  ex_lmark[48: ]
-            ex_lip_region = ex_lip_region.view(-1)
-
-            
-            input_dict = {'audio': audios , 'lip_region': lip_region, 'other_region': other_region, 'ex_other_region':ex_other_region,'ex_lip_region':ex_lip_region,   'img_path': self.data[index][0], 'sample_id' : start_id, 'sample_rt': rts[sample_id] if self.train == 'test' else 1 }
-            return (input_dict)   
-#         except:
-#             return self.__getitem__((index + 1)% len(self.data))
-    def __len__(self):
-        
-            return len(self.data)          
-class Grid_audio_lmark_single(data.Dataset):
-    def __init__(self,
-                 dataset_dir,
-                 train='train',
-                 gan = True):
-        self.train = train  
-        self.root  = '/data/lchen63/grid/zip/' 
-     
-        if self.train=='train':
-            _file = open(os.path.join(dataset_dir, "train_clean_new.pkl"), "rb")
-            self.data = pickle.load(_file)
-            _file.close()
-        elif self.train =='test':
-            _file = open(os.path.join(dataset_dir, "test_clean_new.pkl"), "rb")
-            self.data = pickle.load(_file)
-            _file.close()
-            
-        self.transform = transforms.Compose([
-            transforms.ToTensor(),
-            transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
-        ])
-
-        self.consider_key = [1,2,3,4,5,11,12,13,14,15,27,28,29,30,31,32,33,34,35,39,42,36,45,17,21,22,26]
-    def __getitem__(self, index):
-            lmark = np.load( self.data[index][0][:-4] + '_front.npy' )
-            audio_path = os.path.join(self.root, 'audio', self.data[index][-1] + '_16k.npy' )
-            audio = np.load(audio_path)
-            sample_id = self.data[index][1]
-            lmark_length = lmark.shape[0]
-            audio_length = audio.shape[0]
-            audio_pad = np.zeros((lmark.shape[0] * 4, 13))
-            if audio_length < lmark_length * 4 :
-                audio_pad[:audio_length] = audio
-                audio = audio_pad
-                      
-            if sample_id < 3:
-                sample_audio = np.zeros((28,12))
-                sample_audio[4 * (3- sample_id): ] = audio[4 * (0) : 4 * ( 3 + sample_id + 1 ), 1: ]
-
-            elif sample_id > lmark_length - 4:
-                sample_audio = np.zeros((28,12))
-                sample_audio[:4 * ( lmark_length + 3 - sample_id )] = audio[4 * (sample_id -3) : 4 * ( lmark_length ), 1: ]
-
-            else:
-                sample_audio = audio[4 * (sample_id -3) : 4 * ( sample_id + 4 ) , 1: ]
-            
-            sample_lmark = lmark[sample_id]
-            sample_audio =torch.FloatTensor(sample_audio)
-            sample_lmark =torch.FloatTensor(sample_lmark)
-            lip_region =  sample_lmark[ 48: ]
-            lip_region = lip_region.view(-1)
-
-            other_region =  sample_lmark[ :48 ]
-            other_region = other_region.view( -1)
-    
-            ex_id = self.data[index][2]
-            ex_lmark = lmark[ex_id]
-            ex_lmark =torch.FloatTensor(ex_lmark)
-            
-            ex_other_region =  ex_lmark[:48 ]
-            ex_other_region = ex_other_region.view(-1)
-            
-            ex_lip_region =  ex_lmark[48: ]
-            ex_lip_region = ex_lip_region.view(-1)
-            img_path =  os.path.join(self.root, 'img', self.data[index][-1] , '%05d.png'%(sample_id +1) )
-            input_dict = {'audio': sample_audio , 'lip_region': lip_region, 'other_region': other_region, 'ex_other_region':ex_other_region,'ex_lip_region':ex_lip_region,   'img_path': img_path , 'sample_id' : sample_id}
-#             print (img_id)
-#             print ('========')
-            return (input_dict)   
-#         except:
-#             return self.__getitem__((index + 1)% len(self.data))
-    def __len__(self):
-        
-            return len(self.data)        
-
-
-class Grid_audio_lmark_single_whole(data.Dataset):
-    def __init__(self,
-                 dataset_dir,
-                 train='train',
-                 gan = True):
-        self.train = train  
-        self.root  = '/data/lchen63/grid/zip/' 
-     
-        if self.train=='train':
-            _file = open(os.path.join(dataset_dir, "train_clean_new.pkl"), "rb")
-            self.data = pickle.load(_file)
-            _file.close()
-        elif self.train =='test':
-            _file = open(os.path.join(dataset_dir, "test_clean_new.pkl"), "rb")
-            self.data = pickle.load(_file)
-            _file.close()
-            
-        self.transform = transforms.Compose([
-            transforms.ToTensor(),
-            transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
-        ])
-
-        self.consider_key = [1,2,3,4,5,11,12,13,14,15,27,28,29,30,31,32,33,34,35,39,42,36,45,17,21,22,26]
-    def __getitem__(self, index):
-            lmark = np.load( self.data[index][0][:-4] + '_front_norm.npy' )
-            audio_path = os.path.join(self.root, 'audio', self.data[index][-1] + '_16k.npy' )
-            audio = np.load(audio_path)
-            sample_id = self.data[index][1]
-            lmark_length = lmark.shape[0]
-            audio_length = audio.shape[0]
-            audio_pad = np.zeros((lmark.shape[0] * 4, 13))
-            if audio_length < lmark_length * 4 :
-                audio_pad[:audio_length] = audio
-                audio = audio_pad
-                      
-            if sample_id < 3:
-                sample_audio = np.zeros((28,12))
-                sample_audio[4 * (3- sample_id): ] = audio[4 * (0) : 4 * ( 3 + sample_id + 1 ), 1: ]
-
-            elif sample_id > lmark_length - 4:
-                sample_audio = np.zeros((28,12))
-                sample_audio[:4 * ( lmark_length + 3 - sample_id )] = audio[4 * (sample_id -3) : 4 * ( lmark_length ), 1: ]
-
-            else:
-                sample_audio = audio[4 * (sample_id -3) : 4 * ( sample_id + 4 ) , 1: ]
-            
-            sample_lmark = lmark[sample_id]
-            sample_audio =torch.FloatTensor(sample_audio)
-            sample_lmark =torch.FloatTensor(sample_lmark)
-            
-            target_lmark  = sample_lmark.view( -1)
-    
-            ex_id = self.data[index][2]
-            ex_lmark = lmark[ex_id]
-            ex_lmark =torch.FloatTensor(ex_lmark)
-            ex_lmark = ex_lmark.view(-1)
-            img_path =  os.path.join(self.root, 'img', self.data[index][-1] , '%05d.png'%(sample_id +1) )
-            input_dict = {'audio': sample_audio , 'target_lmark': target_lmark,'ex_lmark':ex_lmark,   'img_path': img_path , 'sample_id' : sample_id}
-#             print (img_id)
-#             print ('========')
-            return (input_dict)   
-#         except:
-#             return self.__getitem__((index + 1)% len(self.data))
-    def __len__(self):
-        
-            return len(self.data)         
-
-        
-class Voxceleb_face_region_single(data.Dataset):
-    def __init__(self,
-                 dataset_dir,
-                 train='train',
-                 gan = True):
-        self.train = train
-        self.gan = gan
-        self.output_shape   = tuple([256, 256])
-        self.num_frames = 64  
-        self.root  = '/data2/lchen63/voxceleb/'      
-        if self.train=='train':
-            _file = open(os.path.join(dataset_dir, "lmark_video_train2_clean_new.pkl"), "rb")
-            self.data = pickle.load(_file)
-            _file.close()
-        elif self.train =='test':
-            _file = open(os.path.join(dataset_dir, "lmark_video_test_clean_new.pkl"), "rb")
-            self.data = pickle.load(_file)
-            _file.close()
-            
-        self.transform = transforms.Compose([
-            transforms.ToTensor(),
-            transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
-        ])
-
-#         self.consider_key = [1,2,3,4,5,11,12,13,14,15,27,28,29,30,31,32,33,34,35,39,42,36,45,17,21,22,26]
-    def __getitem__(self, index):
-#         try:
-            tmp = self.data[index][0].split('/')
-           
-            
-            lmark = np.load( os.path.join(self.root, 'unzip', self.data[index][0] + '.npy' ))
-            length = lmark.shape[0]
-            
-            lmark = torch.FloatTensor(lmark)
-            
-            example_id  = self.data[index][2]
-            sample_id = self.data[index][1]
-            if self.gan:
-                while True:
-                    other_id = np.random.choice([0, length - 1])
-                    if other_id != sample_id:
-                        break
-                
-            lip_base = torch.FloatTensor(3,256, 256)
-            
-            lmark_base = torch.FloatTensor(68,2)
-            video_path =  os.path.join('/data2/lchen63/voxceleb/unzip/',self.data[index][0]+  '.mp4')
-            cap = cv2.VideoCapture(video_path)
-            for t in range(length):
-                ret, frame = cap.read()
-                if ret :
-                    if self.gan and other_id == t:
-                        mismatch_img = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                        mismatch_img = cv2.resize(mismatch_img, self.output_shape)
-                        mismatch_img = self.transform(mismatch_img)
-                    if t == sample_id:
-                        gt_img = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                        gt_img = cv2.resize(gt_img, self.output_shape)
-                        gt_img = self.transform(gt_img)
-                    if t == example_id:
-                        img = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                        img = cv2.resize(img, self.output_shape)
-                        lip = self.transform(img)
-                        lip_base = lip
-                        lmark_base = lmark[t,:, :-1]
-                    
-            input_lmark = lmark[sample_id,:, :-1]
-            input_dict = {'in_lmark': input_lmark ,'lmark_base': lmark_base,  'lip_base': lip_base, 'gt_img': gt_img, 'mismatch_img': mismatch_img}
-            return (input_dict)   
-            
-#         except:
-#             return self.__getitem__((index + 1)% len(self.data))
-    def __len__(self):
-        
-            return len(self.data)  
         
 
 # import os

@@ -13,11 +13,11 @@ from collections import OrderedDict
 import argparse
 from logger import Logger
 import cv2
-# from dataset import  Voxceleb_audio_lmark_single as Voxceleb_audio_lmark
-from dataset import  Voxceleb_audio_lmark_single_short as Voxceleb_audio_lmark
-# from ATVG import AT_single2 as atnet
+from dataset import  Voxceleb_audio_lmark_single as Voxceleb_audio_lmark
+# from dataset import  Voxceleb_audio_lmark_single_short as Voxceleb_audio_lmark
+from ATVG import AT_single as atnet
 
-from ATVG import AT_single3 as atnet
+# from ATVG import AT_single3 as atnet
 from torch.nn import init
 from util import utils
 def multi2single(model_path, id):
@@ -83,7 +83,7 @@ class Trainer():
         self.opt_g = torch.optim.Adam( self.generator.parameters(),
             lr=config.lr, betas=(config.beta1, config.beta2))
 #         self.opt_g = torch.optim.SGD(self.generator.parameters(), lr=config.lr)  
-        self.dataset = Voxceleb_audio_lmark('/data2/lchen63/voxceleb/txt/', 'train')
+        self.dataset = Voxceleb_audio_lmark(config.dataset_dir, 'train')
 
 
         self.data_loader = DataLoader(self.dataset,
@@ -94,15 +94,8 @@ class Trainer():
 
     def fit(self):
         config = self.config
-        face_pca = torch.FloatTensor( np.load('./basics/U_front_roni.npy')[:,:6]).cuda()
-        face_mean =torch.FloatTensor( np.load('./basics/mean_front_roni.npy')).cuda()
-        lip_pca = torch.FloatTensor( np.load('./basics/U_front.npy')[:,:6]).cuda()
-        lip_mean =torch.FloatTensor( np.load('./basics/mean_front.npy')).cuda()
-        
-        
-        lip_std = torch.FloatTensor( np.load('./basics/std_front.npy')).cuda()
-        face_std = torch.FloatTensor( np.load('./basics/std_front_roni.npy')).cuda()
-
+        pca = torch.FloatTensor( np.load('./basics/U_front_smooth_vox.npy')[:,:6]).cuda()
+        mean =torch.FloatTensor( np.load('./basics/mean_front_smooth_vox.npy')).cuda()        
         num_steps_per_epoch = len(self.data_loader)
         cc = 0
         t0 = time.time()
@@ -114,93 +107,65 @@ class Trainer():
             for step, data in enumerate(self.data_loader):
                 t1 = time.time()
                 sample_audio =data['audio']
-                lip_region =  data['lip_region'] 
-                other_region = data['other_region']  
-                ex_other_region = data['ex_other_region'] 
-                ex_lip_region = data['ex_lip_region'] 
-                
-
+                sample_lmark  =  data['sample_lmark'] 
+                ex_lmark  = data['ex_lmark'] 
+            
 
                 if config.cuda:
                     sample_audio    = Variable(sample_audio.float()).cuda()
-                    lip_region = lip_region.float().cuda()
-                    other_region = other_region.float().cuda()
-                    ex_other_region = ex_other_region.float().cuda()
-                    ex_lip_region = ex_lip_region.float().cuda()
+                    sample_lmark = sample_lmark.float().cuda()                   
+                    ex_lmark = ex_lmark.float().cuda()
                 else:
                     sample_audio    = Variable(sample_audio.float())
-                    lip_region = Variable(lip_region.float())
-                    other_region = Variable(other_region.float())
-                    ex_other_region = Variable(ex_other_region.float())
-                    ex_lip_region = ex_lip_region.float()
+                    sample_lmark = Variable(sample_lmark.float())
+                    ex_lmark = Variable(ex_lmark.float())
                 
-                lip_region_pca = (lip_region- lip_mean.expand_as(lip_region))/lip_std
+                sample_lmark_pca = (sample_lmark - mean.expand_as(sample_lmark))                
+                sample_lmark_pca = torch.mm(sample_lmark_pca,  pca)
                 
-                lip_region_pca = torch.mm(lip_region_pca,  lip_pca)
+                ex_lmark_pca = (ex_lmark- mean.expand_as(ex_lmark))
+                ex_lmark_pca = torch.mm(ex_lmark_pca,  pca)
                 
-                ex_lip_region_pca = (ex_lip_region- lip_mean.expand_as(ex_lip_region))/lip_std
-                ex_lip_region_pca = torch.mm(ex_lip_region_pca,  lip_pca)
-                
-                ex_other_region_pca = (ex_other_region - face_mean.expand_as(ex_other_region))/face_std
-                ex_other_region_pca = torch.mm(ex_other_region_pca,  face_pca)    
-                
-                other_region_pca = (other_region - face_mean.expand_as(other_region))/face_std
-                other_region_pca = torch.mm(other_region_pca,  face_pca)                
-                
-                ex_other_region_pca = Variable(ex_other_region_pca)
-                lip_region_pca = Variable(lip_region_pca)
-                other_region_pca = Variable(other_region_pca)
+                sample_lmark_pca = Variable(sample_lmark_pca)
+                ex_lmark_pca = Variable(ex_lmark_pca)
                 
            
-                fake_lip, fake_face = self.generator(sample_audio,ex_other_region_pca, ex_lip_region_pca)              
+                fake_lmark  = self.generator(sample_audio,ex_lmark_pca)              
 
                 
-                loss_lip =  self.mse_loss_fn(fake_lip , lip_region_pca)
-                loss_face =  self.mse_loss_fn(fake_face , other_region_pca)
-                loss= loss_lip + 0.001* loss_face
+                loss =  self.mse_loss_fn(fake_lmark , sample_lmark_pca)
                 loss.backward() 
                 self.opt_g.step()
                 self._reset_gradients()
                 
-                logger.scalar_summary('loss_lip', loss_lip, epoch * num_steps_per_epoch +  step+1)
-                logger.scalar_summary('loss_face', loss_face,epoch * num_steps_per_epoch + step+1)
+                logger.scalar_summary('loss', loss,epoch * num_steps_per_epoch + step+1)
 
                 if step % 100 == 0:
-                    print("[{}/{}:{}/{}]]   loss_face: {:.8f},loss_lip: {:.8f},data time: {:.4f},  model time: {} second"
+                    # print ('++++++++++++++++++++')
+                    # print (fake_lmark)
+                    # print ('===================')
+                    # print (sample_lmark_pca)
+                    print("[{}/{}:{}/{}]]   loss: {:.8f},data time: {:.4f},  model time: {} second"
                       .format(epoch+1, config.max_epochs, step, num_steps_per_epoch,
-                              loss_face, loss_lip,  t1-t0,  time.time() - t1))    
+                              loss,  t1-t0,  time.time() - t1))    
                 t0 = time.time()
                 
                     
-            fake_lip =  fake_lip.view(fake_lip.size(0)  , 6)
-            fake_lip = torch.mm( fake_lip, lip_pca.t() ) 
-            fake_lip = fake_lip  * lip_std + lip_mean.expand_as(fake_lip)
-
-            fake_face =  fake_face.view(fake_face.size(0) , 6) 
-            fake_face = torch.mm( fake_face, face_pca.t() ) 
-            fake_face = fake_face * face_std + face_mean.expand_as(fake_face)
-
-            fake_lmark = torch.cat([fake_face, fake_lip], 1)
+            fake_lmark =  fake_lmark.view(fake_lmark.size(0)  , 6)
+            fake_lmark = torch.mm( fake_lmark, pca.t() ) 
+            fake_lmark =fake_lmark + mean.expand_as(fake_lmark)
 
             fake_lmark = fake_lmark.data.cpu().numpy()
 
-
-            real_lip =  lip_region_pca.view(lip_region_pca.size(0)  , 6) 
-            real_lip = torch.mm( real_lip, lip_pca.t() ) 
-            real_lip = real_lip  * lip_std + lip_mean.expand_as(real_lip)
-
-            real_face =  other_region_pca.view(other_region_pca.size(0) , 6) 
-            real_face = torch.mm( real_face, face_pca.t() ) 
-            real_face = real_face  * face_std + face_mean.expand_as(real_face)
-
-            real_lmark = torch.cat([real_face, real_lip], 1)
+            real_lmark =  sample_lmark_pca.view(sample_lmark_pca.size(0)  , 6)
+            real_lmark = torch.mm( real_lmark, pca.t() ) 
+            real_lmark =real_lmark+ mean.expand_as(real_lmark)
 
             real_lmark = real_lmark.data.cpu().numpy()
 
-
             for gg in range(int(config.batch_size)/ 20):
                 lmark_name  = "{}/fake_{}_{}.png".format(config.sample_dir,epoch, gg)
-                v_path = os.path.join('/data2/lchen63/voxceleb/unzip',data['img_path'][gg]  + '.mp4') 
+                v_path = os.path.join('/home/cxu-serve/p1/lchen63/voxceleb/unzip',data['img_path'][gg]  + '.mp4') 
                 cap = cv2.VideoCapture(v_path)
                 for t in range(real_lmark.shape[0]):
                     ret, frame = cap.read()
@@ -218,7 +183,7 @@ class Trainer():
                 plt.savefig(lmark_name)
 
             torch.save(self.generator.state_dict(),
-                       "{}/anet2_single.pth"
+                       "{}/anet_single.pth"
                        .format(config.model_dir))
 
 
@@ -243,7 +208,7 @@ def parse_args():
                         default=100)
     parser.add_argument("--batch_size",
                         type=int,
-                        default=1024)
+                        default=256)
     parser.add_argument("--max_epochs",
                         type=int,
                         default=10000)
@@ -251,10 +216,11 @@ def parse_args():
                         default=True)
     parser.add_argument("--dataset_dir",
                         type=str,
-                        default="'/data2/lchen63/voxceleb/txt/'")
+                        # default="'/data2/lchen63/voxceleb/txt/'")
+                        default ='/home/cxu-serve/p1/lchen63/voxceleb/txt')
     parser.add_argument("--model_name",
                         type=str,
-                        default="at3")
+                        default="at")
     parser.add_argument("--model_dir",
                         type=str,
                         default="./model/")

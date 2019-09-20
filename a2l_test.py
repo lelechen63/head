@@ -14,7 +14,7 @@ import argparse
 import cv2
 from logger import Logger
 
-# from dataset import  Voxceleb_audio_lmark_single  as Voxceleb_audio_lmark
+from dataset import  Voxceleb_audio_lmark_single  as Voxceleb_audio_lmark
 # from dataset import  Voxceleb_audio_lmark_single_short as Voxceleb_audio_lmark
 
 from torch.nn import init
@@ -69,20 +69,16 @@ def test( config):
 
         initialize_weights(generator)
         if config.dataset_name == 'vox':
-            dataset =  audio_lmark('/data2/lchen63/voxceleb/txt/', config.is_train)
+            dataset =  audio_lmark('/home/cxu-serve/p1/lchen63/voxceleb/txt/', config.is_train)
         else:
-            dataset =  audio_lmark('/data/lchen63/grid/zip/txt/', config.is_train)
+            dataset =  audio_lmark('/home/cxu-serve/p1/lchen63/voxceleb/txt/', config.is_train)
         data_loader = DataLoader(dataset,
                                       batch_size=config.batch_size,
                                       num_workers=config.num_thread,
                                       shuffle=False, drop_last=True)
         if config.dataset_name == 'vox':
-            face_pca = torch.FloatTensor( np.load('./basics/U_front_roni.npy')[:,:6]).cuda()
-            face_mean =torch.FloatTensor( np.load('./basics/mean_front_roni.npy')).cuda()
-            lip_pca = torch.FloatTensor( np.load('./basics/U_front.npy')[:,:6]).cuda()
-            lip_mean =torch.FloatTensor( np.load('./basics/mean_front.npy')).cuda()
-            lip_std = torch.FloatTensor( np.load('./basics/std_front.npy')).cuda()
-            face_std = torch.FloatTensor( np.load('./basics/std_front_roni.npy')).cuda()
+            pca = torch.FloatTensor( np.load('./basics/U_front_smooth_vox.npy')[:,:6]).cuda()
+            mean =torch.FloatTensor( np.load('./basics/mean_front_smooth_vox.npy')).cuda()    
         elif config.dataset_name == 'grid':
             face_pca = torch.FloatTensor( np.load('./basics/U_grid_roni.npy')[:,:6]).cuda()
             face_mean =torch.FloatTensor( np.load('./basics/mean_grid_roni.npy')).cuda()
@@ -110,91 +106,59 @@ def test( config):
                 break
             t1 = time.time()
             sample_audio =data['audio']
-            lip_region =  data['lip_region'] 
-            other_region = data['other_region']  
-            ex_other_region = data['ex_other_region'] 
-            ex_lip_region = data['ex_lip_region'] 
+            sample_lmark =  data['sample_lmark'] 
+            ex_lmark = data['ex_lmark']  
+            
             if config.dataset_name == 'vox':
                 sample_rt = data['sample_rt'].numpy()
 
 
+
             if config.cuda:
                 sample_audio    = Variable(sample_audio.float()).cuda()
-                lip_region = lip_region.float().cuda()
-                other_region = other_region.float().cuda()
-                ex_other_region = ex_other_region.float().cuda()
-                ex_lip_region = ex_lip_region.float().cuda()
-            else:
-                sample_audio    = Variable(sample_audio.float())
-                lip_region = Variable(lip_region.float())
-                other_region = Variable(other_region.float())
-                ex_other_region = Variable(ex_other_region.float())
-                ex_lip_region = ex_lip_region.float()
+                sample_lmark = sample_lmark.float().cuda()
+                ex_lmark = ex_lmark.float().cuda()
+            
 
-            lip_region_pca = (lip_region- lip_mean.expand_as(lip_region))/lip_std
+            sample_lmark_pca = (sample_lmark- mean.expand_as(sample_lmark))
+            
             if config.pca:
-                lip_region_pca = torch.mm(lip_region_pca,  lip_pca)
+                sample_lmark_pca = torch.mm(sample_lmark_pca,  pca)
 
-            ex_lip_region_pca = (ex_lip_region- lip_mean.expand_as(ex_lip_region))/lip_std
+            ex_lmark_pca = (ex_lmark- mean.expand_as(ex_lmark))
             if config.pca:
-                ex_lip_region_pca = torch.mm(ex_lip_region_pca,  lip_pca)
+                ex_lmark_pca = torch.mm(ex_lmark_pca,  pca)
 
-            ex_other_region_pca = (ex_other_region - face_mean.expand_as(ex_other_region))/face_std
-            if config.pca:
-                ex_other_region_pca = torch.mm(ex_other_region_pca,  face_pca)    
-
-            other_region_pca = (other_region - face_mean.expand_as(other_region))/face_std
-            if config.pca:
-                other_region_pca = torch.mm(other_region_pca,  face_pca)                
-
-            ex_other_region_pca = Variable(ex_other_region_pca)
-            lip_region_pca = Variable(lip_region_pca)
-            other_region_pca = Variable(other_region_pca)
+            sample_lmark_pca = Variable(sample_lmark_pca)
+            ex_lmark_pca = Variable(ex_lmark_pca)
 
 
-            fake_lip, fake_face = generator(sample_audio,ex_other_region_pca, ex_lip_region_pca)              
+            fake_lmark = generator(sample_audio,ex_lmark_pca)              
             
             
-            loss_lip = mse_loss_fn(fake_lip , lip_region_pca)
-            loss_face =  mse_loss_fn(fake_face , other_region_pca)
+            loss  = mse_loss_fn(fake_lmark , sample_lmark_pca)
            
 
-            logger.scalar_summary('loss_lip', loss_lip,   step+1)
-            logger.scalar_summary('loss_face', loss_face, step+1) 
+            logger.scalar_summary('loss', loss,   step+1)
                 
             if config.pca:        
-                fake_lip =  fake_lip.view(fake_lip.size(0)  , 6)
-                fake_lip = torch.mm( fake_lip, lip_pca.t() ) 
+                fake_lmark =  fake_lmark.view(fake_lmark.size(0)  , 6)
+                fake_lmark = torch.mm( fake_lmark, pca.t() ) 
             else:
-                fake_lip =  fake_lip.view(fake_lip.size(0)  , 60)
-            fake_lip = fake_lip  * lip_std + lip_mean.expand_as(fake_lip)
-            if config.pca:
-                fake_face =  fake_face.view(fake_face.size(0) , 6) 
-                fake_face = torch.mm( fake_face, face_pca.t() ) 
-            else:
-                fake_face =  fake_face.view(fake_face.size(0) , 144)
-            fake_face = fake_face * face_std + face_mean.expand_as(fake_face)
-
-            fake_lmark = torch.cat([fake_face, fake_lip], 1)
+                fake_lmark =  fake_lmark.view(fake_lmark.size(0)  , 204)
+            fake_lmark +=  mean.expand_as(fake_lmark)
+           
 
             fake_lmark = fake_lmark.data.cpu().numpy()
             
-            
-            
-            if config.pca:
-                real_lip =  lip_region_pca.view(lip_region_pca.size(0)  , 6) 
-                real_lip = torch.mm( real_lip, lip_pca.t() ) 
+            if config.pca:        
+                real_lmark =  sample_lmark_pca.view(sample_lmark_pca.size(0)  , 6)
+                real_lmark = torch.mm( real_lmark, pca.t() ) 
             else:
-                real_lip =  lip_region_pca.view(lip_region_pca.size(0)  , 60) 
-            real_lip = real_lip  * lip_std + lip_mean.expand_as(real_lip)
-            if config.pca:
-                real_face =  other_region_pca.view(other_region_pca.size(0) , 6) 
-                real_face = torch.mm( real_face, face_pca.t() ) 
-            else:
-                real_face =  other_region_pca.view(other_region_pca.size(0) , 144) 
-            real_face = real_face  * face_std + face_mean.expand_as(real_face)
-
-            real_lmark = torch.cat([real_face, real_lip], 1)
+                real_lmark =  real_lmark.view(real_lmark.size(0)  , 204)
+            real_lmark +=  mean.expand_as(real_lmark)
+                       
+            
 
             real_lmark = real_lmark.data.cpu().numpy()
             
@@ -210,7 +174,7 @@ def test( config):
                     A3 = utils.reverse_rt(real_lmark[gg].reshape((68,3)), sample_rt[gg])
                 if config.visualize:
                     if config.dataset_name == 'vox':
-                        v_path = os.path.join('/data2/lchen63/voxceleb/unzip',data['img_path'][gg]  + '.mp4') 
+                        v_path = os.path.join('/home/cxu-serve/p1/lchen63/voxceleb/unzip',data['img_path'][gg]  + '.mp4') 
                         cap = cv2.VideoCapture(v_path)
                         for t in range(real_lmark.shape[0]):
                             ret, frame = cap.read()
@@ -291,17 +255,17 @@ def parse_args():
                         default=True)
     parser.add_argument("--dataset_dir",
                         type=str,
-                        default="'/data2/lchen63/voxceleb/txt/'")
+                        default="/home/cxu-serve/p1/lchen63/voxceleb/txt/'")
     parser.add_argument("--model_name",
                         type=str,
-                        default="at2_no_pca_pca_grid")
+                        default="at")
     parser.add_argument("--model_dir",
                         type=str,
-                        default="./model/at2_no_pca_no_pca_openrate_loss3_grid/anet2_single.pth")
+                        default="./model/at/anet_single.pth")
     parser.add_argument("--sample_dir",
                         type=str,
                         default="./test_result/")   
-    parser.add_argument('--dataset_name', type=str, default='grid')
+    parser.add_argument('--dataset_name', type=str, default='vox')
     parser.add_argument('--device_ids', type=str, default='0')
     parser.add_argument('--num_thread', type=int, default=1)
     parser.add_argument('--weight_decay', type=float, default=4e-4)
@@ -310,7 +274,6 @@ def parse_args():
     parser.add_argument('--pretrained_epoch', type=int)
     parser.add_argument('--start_epoch', type=int, default=0, help='start from 0')
     parser.add_argument('--pca', type=bool, default=True, help='True or False')
-    parser.add_argument('--map_length', type=str, default='7', help='3,5,7')
     parser.add_argument('--openrate', type=bool, default=True, help='True or False')
     parser.add_argument('--visualize', type=bool, default=True, help='True or False')
     return parser.parse_args()
@@ -322,34 +285,12 @@ if __name__ == "__main__":
     
     # os.environ["CUDA_VISIBLE_DEVICES"] = config.device_ids
     config.is_train = 'test'
-    if config.pca:
-        if config.dataset_name == 'vox':
-            if config.map_length == '7':
-                from dataset import  Voxceleb_audio_lmark_single  as audio_lmark
-                from ATVG import AT_single2 as atnet
-                config.model_name += '_pca'      
-                config.model_dir = "./model/at2/anet2_single.pth"
-            elif config.map_length == '3':
-                from dataset import  Voxceleb_audio_lmark_single_short as audio_lmark
-                from ATVG import AT_single3 as atnet
-                config.model_name = 'at3_test' 
-                config.model_name += '_pca'      
-                config.model_dir = "./model/at3/anet2_single.pth"
+            
+    from ATVG import AT_single as atnet
+    from dataset import  Voxceleb_audio_lmark_single  as audio_lmark
+    config.model_dir = "./model/at/anet_single.pth"
 
-        else:
-            from ATVG import AT_single2 as atnet
-            from dataset import  Grid_audio_lmark_single  as audio_lmark
-            config.model_dir = "./model/at2_pca_grid/anet2_single.pth"
-
-    else:
-        if config.dataset_name == 'vox':
-            from dataset import  Voxceleb_audio_lmark_single  as audio_lmark
-            if config.openrate:
-                config.model_dir = "./model/at2_no_pca_no_pca_openrate_loss3_grid/anet2_single.pth"
-        else:
-            from dataset import  Grid_audio_lmark_single  as audio_lmark
-            config.model_dir = "./model/at2_no_pca_no_pca_openrate_loss3_grid/anet2_single.pth"
-        from ATVG import AT_single2_no_pca as atnet
+    
             
     config.sample_dir = os.path.join(config.sample_dir, config.model_name)
     config.log_dir = os.path.join('./logs', config.model_name)
