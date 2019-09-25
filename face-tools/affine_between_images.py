@@ -13,11 +13,11 @@ def shape_to_np(shape, dtype):
     for i in range(0, 68):
         coord[i] = (shape.part(i). x, shape.part(i).y)
     return coord
-
+p ="../basics/shape_predictor_68_face_landmarks.dat"
+detector = dlib.get_frontal_face_detector()
+predictor = dlib.shape_predictor(p)
 def extract_landmarks(image):
-    p = "common-data/shape_predictor_68_face_landmarks.dat"
-    detector = dlib.get_frontal_face_detector()
-    predictor = dlib.shape_predictor(p)
+    
     print('training model loaded...')
     image_cv = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
     rects = detector(image_cv,0)
@@ -38,14 +38,14 @@ def get_affine(image_render, image_real):
     affine = AffineTransform(matrix=P_homo)
     return affine
 
-if __name__ == '__main__':
+# if __name__ == '__main__':
 
-    image_real = imageio.imread("00025/00025_00058.png")
-    image_render = imageio.imread("00025/00025_00058_render.png")
+#     image_real = imageio.imread("00025/00025_00058.png")
+#     image_render = imageio.imread("00025/00025_00058_render.png")
 
-    affine = get_affine(image_render, image_real)
-    warped = warp(image_render, affine.inverse)
-    warped = (255*warped).astype(np.uint8)
+#     affine = get_affine(image_render, image_real)
+#     warped = warp(image_render, affine.inverse)
+#     warped = (255*warped).astype(np.uint8)
 
-    plt.imshow((warped[:,:,:3] * 0.5 + image_real[:,:,:3] * 0.5).astype(np.uint8))
-    plt.show()
+#     plt.imshow((warped[:,:,:3] * 0.5 + image_real[:,:,:3] * 0.5).astype(np.uint8))
+#     plt.show()

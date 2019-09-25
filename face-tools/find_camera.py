@@ -5,15 +5,18 @@ from skimage.transform import warp
 from skimage.transform import AffineTransform
 import numpy as np
 import cv2
-import dlib
 
 import torch
 
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from scipy.spatial.transform import Rotation as R
-
+import time
 res = 224
+import os
+import pickle
+root  = '/home/cxu-serve/p1/lchen63/voxceleb/'
+import shutil
 
 def recover(rt):
     rots = []
@@ -54,119 +57,241 @@ def load_obj(obj_file):
     
     return (np.array(vertices), np.array(triangles).astype(np.int), np.array(colors))
 
-def frontalize(vertices):
-    canonical_vertices = np.load('common-data/canonical_vertices.npy')
-    vertices_homo = np.hstack((vertices, np.ones([vertices.shape[0],1]))) #n x 4
-    P = np.linalg.lstsq(vertices_homo, canonical_vertices, rcond=1)[0].T # Affine matrix. 3 x 4
-    front_vertices = vertices_homo.dot(P.T)
-    return front_vertices, P
-
-def display_image(image):
-    image = image.detach().cpu().numpy()
-    image = image.transpose((1,2,0))
-    plt.imshow(image)
-    plt.show()
-
-def shape_to_np(shape, dtype):
-    coord = np.zeros(shape=(68, 2), dtype=dtype)
-    for i in range(0, 68):
-        coord[i] = (shape.part(i). x, shape.part(i).y)
-    return coord
-
-def extract_landmarks(image):
-    p = "../basics/shape_predictor_68_face_landmarks.dat"
-    detector = dlib.get_frontal_face_detector()
-    predictor = dlib.shape_predictor(p)
-    print('training model loaded...')
-    image_cv = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
-    rects = detector(image_cv,0)
-    rect = rects[0]
-    shape = predictor(image_cv,rect)
-    shape= shape_to_np(shape,"int")
-    lmk_pos = []
-    for p in shape:
-        lmk_pos.append([p[0], p[1]])
-    return np.array(lmk_pos)
-
-def get_affine(image_render, image_real):
-    lmk_pos_real = extract_landmarks(image_real)
-    lmk_pos_render = extract_landmarks(image_render)
-    lmk_pos_render_homo = np.hstack((lmk_pos_render, np.ones([lmk_pos_render.shape[0], 1])))
-    P = np.linalg.lstsq(lmk_pos_render_homo, lmk_pos_real, rcond=1)[0].T
-    P_homo = np.vstack((P, np.array([0,0,1])))
-    affine = AffineTransform(matrix=P_homo)
-    return affine
-
-def setup_renderer(vertices):
-    center = vertices.mean(axis=0)
-    eye_pos = center + np.array([0.0, 0.0, 600.0])
-    cam_up = [0.0,1.0,0.0]
-    cam_dir = [0.0,0.0,-1.0]
-    renderer = sr.SoftRenderer(camera_mode="look", far=10000, camera_direction=cam_dir, camera_up=cam_up, eye=eye_pos.astype(np.float32), image_size=res, viewing_angle=15, light_intensity_ambient=1)
+def setup_renderer():    
+    renderer = sr.SoftRenderer(camera_mode="look", viewing_scale=2/res, far=10000, perspective=False, image_size=res, camera_direction=[0,0,-1], camera_up=[0,1,0], light_intensity_ambient=1)
+    renderer.transform.set_eyes([res/2, res/2, 6000])
     return renderer
-
 def get_np_uint8_image(mesh, renderer):
     images = renderer.render_mesh(mesh)
     image = images[0]
-    image = torch.flip(image, [2])
+    image = torch.flip(image, [1,2])
     image = image.detach().cpu().numpy().transpose((1,2,0))
+    image = np.clip(image, 0, 1)
     image = (255*image).astype(np.uint8)
     return image
 
-if __name__ == "__main__":
-    key_id = 58 #
-    model_id = "00025"
-    video_len = 8000 # milliseconds
 
-    vertices_org, triangles, colors = load_obj("{}/{}_original.obj".format(model_id, model_id)) # get unfrontalized vertices position
+def demo():
+    key_id = 95 # index of the frame used to do the 3D face reconstruction (key frame)
+    model_id = "00218"
+    itvl = 1000.0/25.0 # 25fps
     
-    # set up the renderer
-    renderer = setup_renderer(vertices_org)
 
-    # generate rendered key image 
-    face_mesh = sr.Mesh(vertices_org, triangles, colors, texture_type="vertex")
-    key_image_render = get_np_uint8_image(face_mesh, renderer)
 
-    # calculate the affine matrix between rendered key image and real key image
-    key_image_real = imageio.imread("{}/{}_{:05}.png".format(model_id, model_id, key_id))
-    affine = get_affine(key_image_render, key_image_real)
+    # extract the frontal facial landmarks for key frame
+    lmk3d_all = np.load("{}/{}_front.npy".format(model_id, model_id))
+    lmk3d_target = lmk3d_all[key_id]
 
-    # load RTs
+    # load the 3D facial landmarks on the PRNet 3D reconstructed face
+    lmk3d_origin = np.load("{}/{}_prnet.npy".format(model_id, model_id))
+    lmk3d_origin[:,1] = res - lmk3d_origin[:,1]
+
+    # load RTs for all frame
     rots, trans = recover(np.load("{}/{}_sRT.npy".format(model_id, model_id)))
 
-    # calculate frontalized vertices and the associated affine matrix
-    # decompose the affine matrix to rotation and translation for latering usage
-    vertices, p_affine = frontalize(vertices_org)
+    # calculate the affine transformation between PRNet 3D face and the frotal face landmarks
+    lmk3d_origin_homo = np.hstack((lmk3d_origin, np.ones([lmk3d_origin.shape[0],1]))) # 68x4
+    p_affine = np.linalg.lstsq(lmk3d_origin_homo, lmk3d_target, rcond=1)[0].T # Affine matrix. 3 x 4
     pr = p_affine[:,:3] # 3x3
     pt = p_affine[:,3:] # 3x1
-    pr_inv = np.linalg.inv(pr)
 
-    # generate animation
+    # load the original 3D face mesh then transform it to align frontal face landmarks
+    vertices_org, triangles, colors = load_obj("{}/{}_original.obj".format(model_id, model_id)) # get unfrontalized vertices position
+    vertices_origin_affine = (pr @ (vertices_org.T) + pt).T # aligned vertices
+
+    # set up the renderer
+    renderer = setup_renderer()
+
+    if overlay:
+        real_video = mmcv.VideoReader("{}/{}.mp4".format(model_id, model_id))
+
     fig = plt.figure()
     ims = []
-    # writer = imageio.get_writer('rotation.gif', mode='I')
+
     for i in range(rots.shape[0]):
+        # get rendered frame
+        vertices = (rots[i].T @ (vertices_origin_affine.T - trans[i])).T
+        face_mesh = sr.Mesh(vertices, triangles, colors, texture_type="vertex")
+        image_render = get_np_uint8_image(face_mesh, renderer) # RGBA, (224,224,3), np.uint8
 
-        # dark magic transformation
-        # update the unfrontalized vertices based on RTs in canonical coordinates
-        new_vertices = (pr_inv @ (rots[key_id] @ np.linalg.inv(rots[i]) @ (vertices.T - trans[i]) + trans[key_id] - pt)).T 
+        if overlay:
+            frame = mmcv.bgr2rgb(real_video[i]) # RGB, (224,224,3), np.uint8
 
-        # do the rendering
-        face_mesh = sr.Mesh(new_vertices, triangles, colors, texture_type="vertex")
-        image = get_np_uint8_image(face_mesh, renderer)
-
-        # apply the image affine transformation
-        warped_image = warp(image, affine.inverse)
-
-        # push into video frames
-        im = plt.imshow(warped_image, animated=True)
+        if not overlay:
+            im = plt.imshow(image_render, animated=True)
+        else:
+            im = plt.imshow((frame[:,:,:3] * 0.5 + image_render[:,:,:3] * 0.5).astype(np.uint8), animated=True)
+        
         ims.append([im])
+        print("[{}/{}]".format(i+1, rots.shape[0])) 
+    
+
+    ani = animation.ArtistAnimation(fig, ims, interval=itvl, blit=True, repeat_delay=1000)
+    if not overlay:
+        ani.save('{}/{}_render.mp4'.format(model_id, model_id))
+    else:
+        ani.save('{}/{}_overlay.mp4'.format(model_id, model_id))
+    plt.show()
+
+
+def get():
+    # key_id = 58 #
+    # model_id = "00025"
+
+    _file = open(os.path.join(root, 'txt',  "front_rt.pkl"), "rb")
+    data = pickle._Unpickler(_file)
+    data.encoding = 'latin1'
+
+    data = data.load()
+    _file.close()
+    for item in data:
+        key_id = item[-1]
+        video_path = item[0]
+
+        reference_img_path = video_path[:-4] + '_%05d.png'%key_id
+
+        reference_prnet_lmark_path = video_path[:-4] +'_prnet.npy'
+
+        original_obj_path = video_path[:-4] + '_original.obj'
+
+        rt_path  = video_path[:-4] + '_sRT.npy'
+        lmark_path  = video_path[:-4] +'.npy'
+
+
+        # if os.path.exists( video_path[:-4] + '_ani.mp4'):
+        #     print ('=====')
+        #     continue
+
+        if  not os.path.exists(original_obj_path):
+            print ('original_obj_path')
+            print ('++++')
+            continue
+
+        # extract the frontal facial landmarks for key frame
+        lmk3d_all = np.load(lmark_path)
+        lmk3d_target = lmk3d_all[key_id]
+
+
+        # load the 3D facial landmarks on the PRNet 3D reconstructed face
+        lmk3d_origin = np.load(reference_prnet_lmark_path)
+        # lmk3d_origin[:,1] = res - lmk3d_origin[:,1]
+        
+        
+
+        # load RTs
+        rots, trans = recover(np.load(rt_path))
+
+        # calculate the affine transformation between PRNet 3D face and the frotal face landmarks
+        lmk3d_origin_homo = np.hstack((lmk3d_origin, np.ones([lmk3d_origin.shape[0],1]))) # 68x4
+        p_affine = np.linalg.lstsq(lmk3d_origin_homo, lmk3d_target, rcond=1)[0].T # Affine matrix. 3 x 4
+        pr = p_affine[:,:3] # 3x3
+        pt = p_affine[:,3:] # 3x1
+
+        # load the original 3D face mesh then transform it to align frontal face landmarks
+        vertices_org, triangles, colors = load_obj(original_obj_path) # get unfrontalized vertices position
+        vertices_origin_affine = (pr @ (vertices_org.T) + pt).T # aligned vertices
+
+        # set up the renderer
+        renderer = setup_renderer()
+        # generate animation
+
+
+
+        # generate animation
+        if os.path.exists('./tempo'):
+            shutil.rmtree('./tempo')
+        os.mkdir('./tempo')
+        # writer = imageio.get_writer('rotation.gif', mode='I')
+        for i in range(rots.shape[0]):
+
+                # get rendered frame
+            vertices = (rots[i].T @ (vertices_origin_affine.T - trans[i])).T
+            face_mesh = sr.Mesh(vertices, triangles, colors, texture_type="vertex")
+            image_render = get_np_uint8_image(face_mesh, renderer) # RGBA, (224,224,3), np.uint8
+            
+            #save rgba image as bgr in cv2
+            rgb_frame =  (image_render).astype(int)[:,:,:-1][...,::-1]
+            cv2.imwrite("./tempo/%05d.png"%i, rgb_frame)  
+        command = 'ffmpeg -framerate 25 -i ./tempo/%5d.png  -c:v libx264 -y -vf format=yuv420p ' +   video_path[:-4] + '_ani.mp4'
+        os.system(command)
+
+def gg():
+    key_id = 58 #
+    video_path = '/home/cxu-serve/p1/lchen63/voxceleb/unzip/test_video/id04950/e1ZI2hKZJEs/00221.mp4'
+    reference_img_path = video_path[:-4] + '_%05d.png'%key_id
+    reference_prnet_lmark_path = video_path[:-4] +'_prnet.npy'
+
+    original_obj_path = video_path[:-4] + '_original.obj'
+
+    rt_path  = video_path[:-4] + '_sRT.npy'
+
+    lmark_path  = video_path[:-4] +'.npy'
+
+
+
+    # extract the frontal facial landmarks for key frame
+    lmk3d_all = np.load(lmark_path)
+    lmk3d_target = lmk3d_all[key_id]
+
+
+    # load the 3D facial landmarks on the PRNet 3D reconstructed face
+    lmk3d_origin = np.load(reference_prnet_lmark_path)
+    # lmk3d_origin[:,1] = res - lmk3d_origin[:,1]
+    
+    
+
+
+    # load RTs
+    rots, trans = recover(np.load(rt_path))
+
+     # calculate the affine transformation between PRNet 3D face and the frotal face landmarks
+    lmk3d_origin_homo = np.hstack((lmk3d_origin, np.ones([lmk3d_origin.shape[0],1]))) # 68x4
+    p_affine = np.linalg.lstsq(lmk3d_origin_homo, lmk3d_target, rcond=1)[0].T # Affine matrix. 3 x 4
+    pr = p_affine[:,:3] # 3x3
+    pt = p_affine[:,3:] # 3x1
+
+    # load the original 3D face mesh then transform it to align frontal face landmarks
+    vertices_org, triangles, colors = load_obj(original_obj_path) # get unfrontalized vertices position
+    vertices_origin_affine = (pr @ (vertices_org.T) + pt).T # aligned vertices
+
+    # set up the renderer
+    renderer = setup_renderer()
+    # generate animation
+
+    if os.path.exists('./tempo1'):
+        shutil.rmtree('./tempo1')
+    os.mkdir('./tempo1')
+
+
+    for i in range(rots.shape[0]):
+        t = time.time()
+        
+
+        # get rendered frame
+        vertices = (rots[i].T @ (vertices_origin_affine.T - trans[i])).T
+        face_mesh = sr.Mesh(vertices, triangles, colors, texture_type="vertex")
+        image_render = get_np_uint8_image(face_mesh, renderer) # RGBA, (224,224,3), np.uint8
+        print (image_render.shape)
+        print (image_render.max())
+        print (image_render.min())
+        #save rgba image as bgr in cv2
+        rgb_frame =  (image_render ).astype(int)[:,:,:-1][...,::-1]
+        cv2.imwrite("./tempo1/%05d.png"%i, rgb_frame)
+
+
+        print (time.time() - t)
         # writer.append_data((255*warped_image).astype(np.uint8))
 
         print("[{}/{}]".format(i+1, rots.shape[0]))    
-    # writer.close()
+        # if i == 5:
+        #     break
+    t = time.time()
+    ani_mp4_file_name = './fuck.mp4'
+    command = 'ffmpeg -framerate 25 -i ./tempo1/%5d.png  -c:v libx264 -y -vf format=yuv420p ' + ani_mp4_file_name 
+    os.system(command)
+    print (time.time() - t)
+    
 
-    itvl = video_len / (rots.shape[0]-1)
-    ani = animation.ArtistAnimation(fig, ims, interval=itvl, blit=True, repeat_delay=1000)
-    ani.save('{}/{}_render_ani.mp4'.format(model_id, model_id))
-    plt.show()
+# demo()
+# gg()
+get()

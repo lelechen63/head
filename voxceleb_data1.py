@@ -38,7 +38,8 @@ def parse_args():
 config = parse_args()
 
 
-root = '/data2/lchen63/voxceleb/'
+# root = '/data2/lchen63/voxceleb/'
+root ='/home/cxu-serve/p1/lchen63/voxceleb/'
 # fa = face_alignment.FaceAlignment(face_alignment.LandmarksType._3D, flip_input=False)#,  device='cpu')
 
 
@@ -140,18 +141,20 @@ import matplotlib.pyplot as plt
 from skimage import io
 import cv2
 import os
-root = '/data2/lchen63/voxceleb'
-def vis(root):
-    v_path = '/data2/lchen63/voxceleb/unzip/dev_video/id05668/pqc_ipxncU4/00095.mp4'
-    lmark_path = '/data2/lchen63/voxceleb/unzip/dev_video/id05668/pqc_ipxncU4/00095.npy'
+import mmcv
+def vis3d():
+    v_path = os.path.join(root, 'unzip', 'test_video/id04950/e1ZI2hKZJEs/00219' + '.mp4' )
+    lmark_path = os.path.join(root, 'unzip', 'test_video/id04950/e1ZI2hKZJEs/00219_prnet' + '.npy' )
     cap  =  cv2.VideoCapture(v_path)
     lmark = np.load(lmark_path)
+    print (lmark.shape)
     count = 0
     tmp = v_path.split('/')
+    real_video  = mmcv.VideoReader(v_path)
     for count in range(0,100):
-        frame_name = os.path.join(root , 'img', tmp[-3], tmp[-2], tmp[-1][:-4] ,'%05d.png'%count)
-        input = io.imread(frame_name)
-        preds = lmark[count]
+        input = real_video[count]
+        input = mmcv.bgr2rgb(input)
+        preds = lmark
         #TODO: Make this nice
         fig = plt.figure(figsize=plt.figaspect(.5))
         ax = fig.add_subplot(1, 2, 1)
@@ -217,7 +220,6 @@ import os
 import numpy as np
 import pickle
 
-print ('++++')
 
 def get_train_pair(txt):
 
@@ -365,6 +367,29 @@ def compute_RT():
             print (time.time() - t )
 
 
+def vis(lists): # a list [frame, landmark, frame, landmark]
+    windows = len(lists)/2
+    print (windows)
+    fig = plt.figure(figsize=plt.figaspect(.5))
+
+    for i in range(windows):
+#     img  = io.imread(img_path)
+        preds = lists[i*2 + 1 ]
+        ax = fig.add_subplot(1, windows, i + 1)
+        ax.imshow(lists[i* 2])
+        ax.plot(preds[0:17,0],preds[0:17,1],marker='o',markersize=1,linestyle='-',color='w',lw=1)
+        ax.plot(preds[17:22,0],preds[17:22,1],marker='o',markersize=1,linestyle='-',color='w',lw=1)
+        ax.plot(preds[22:27,0],preds[22:27,1],marker='o',markersize=1,linestyle='-',color='w',lw=1)
+        ax.plot(preds[27:31,0],preds[27:31,1],marker='o',markersize=1,linestyle='-',color='w',lw=1)
+        ax.plot(preds[31:36,0],preds[31:36,1],marker='o',markersize=1,linestyle='-',color='w',lw=1)
+        ax.plot(preds[36:42,0],preds[36:42,1],marker='o',markersize=1,linestyle='-',color='w',lw=1)
+        ax.plot(preds[42:48,0],preds[42:48,1],marker='o',markersize=1,linestyle='-',color='w',lw=1)
+        ax.plot(preds[48:60,0],preds[48:60,1],marker='o',markersize=1,linestyle='-',color='w',lw=1)
+        ax.plot(preds[60:68,0],preds[60:68,1],marker='o',markersize=1,linestyle='-',color='w',lw=1) 
+        ax.axis('off')
+        
+   
+    plt.show()
 def rigid_transform_3D(A, B):
     assert len(A) == len(B)
 
@@ -397,38 +422,38 @@ def rigid_transform_3D(A, B):
 #     print( t)
 
     return R, t
-def vis(img,lmark1,lmark2):
-#     img  = io.imread(img_path)
-    preds = lmark1
-    fig = plt.figure(figsize=plt.figaspect(.5))
-    ax = fig.add_subplot(1, 2, 1)
-    ax.imshow(img)
-    ax.plot(preds[0:17,0],preds[0:17,1],marker='o',markersize=1,linestyle='-',color='w',lw=1)
-    ax.plot(preds[17:22,0],preds[17:22,1],marker='o',markersize=1,linestyle='-',color='w',lw=1)
-    ax.plot(preds[22:27,0],preds[22:27,1],marker='o',markersize=1,linestyle='-',color='w',lw=1)
-    ax.plot(preds[27:31,0],preds[27:31,1],marker='o',markersize=1,linestyle='-',color='w',lw=1)
-    ax.plot(preds[31:36,0],preds[31:36,1],marker='o',markersize=1,linestyle='-',color='w',lw=1)
-    ax.plot(preds[36:42,0],preds[36:42,1],marker='o',markersize=1,linestyle='-',color='w',lw=1)
-    ax.plot(preds[42:48,0],preds[42:48,1],marker='o',markersize=1,linestyle='-',color='w',lw=1)
-    ax.plot(preds[48:60,0],preds[48:60,1],marker='o',markersize=1,linestyle='-',color='w',lw=1)
-    ax.plot(preds[60:68,0],preds[60:68,1],marker='o',markersize=1,linestyle='-',color='w',lw=1) 
-    ax.axis('off')
+# def vis(img,lmark1,lmark2):
+# #     img  = io.imread(img_path)
+#     preds = lmark1
+#     fig = plt.figure(figsize=plt.figaspect(.5))
+#     ax = fig.add_subplot(1, 2, 1)
+#     ax.imshow(img)
+#     ax.plot(preds[0:17,0],preds[0:17,1],marker='o',markersize=1,linestyle='-',color='w',lw=1)
+#     ax.plot(preds[17:22,0],preds[17:22,1],marker='o',markersize=1,linestyle='-',color='w',lw=1)
+#     ax.plot(preds[22:27,0],preds[22:27,1],marker='o',markersize=1,linestyle='-',color='w',lw=1)
+#     ax.plot(preds[27:31,0],preds[27:31,1],marker='o',markersize=1,linestyle='-',color='w',lw=1)
+#     ax.plot(preds[31:36,0],preds[31:36,1],marker='o',markersize=1,linestyle='-',color='w',lw=1)
+#     ax.plot(preds[36:42,0],preds[36:42,1],marker='o',markersize=1,linestyle='-',color='w',lw=1)
+#     ax.plot(preds[42:48,0],preds[42:48,1],marker='o',markersize=1,linestyle='-',color='w',lw=1)
+#     ax.plot(preds[48:60,0],preds[48:60,1],marker='o',markersize=1,linestyle='-',color='w',lw=1)
+#     ax.plot(preds[60:68,0],preds[60:68,1],marker='o',markersize=1,linestyle='-',color='w',lw=1) 
+#     ax.axis('off')
     
-    preds = lmark2
+#     preds = lmark2
     
-    ax = fig.add_subplot(1, 2, 2)
-    ax.imshow(img)
-    ax.plot(preds[0:17,0],preds[0:17,1],marker='o',markersize=1,linestyle='-',color='w',lw=1)
-    ax.plot(preds[17:22,0],preds[17:22,1],marker='o',markersize=1,linestyle='-',color='w',lw=1)
-    ax.plot(preds[22:27,0],preds[22:27,1],marker='o',markersize=1,linestyle='-',color='w',lw=1)
-    ax.plot(preds[27:31,0],preds[27:31,1],marker='o',markersize=1,linestyle='-',color='w',lw=1)
-    ax.plot(preds[31:36,0],preds[31:36,1],marker='o',markersize=1,linestyle='-',color='w',lw=1)
-    ax.plot(preds[36:42,0],preds[36:42,1],marker='o',markersize=1,linestyle='-',color='w',lw=1)
-    ax.plot(preds[42:48,0],preds[42:48,1],marker='o',markersize=1,linestyle='-',color='w',lw=1)
-    ax.plot(preds[48:60,0],preds[48:60,1],marker='o',markersize=1,linestyle='-',color='w',lw=1)
-    ax.plot(preds[60:68,0],preds[60:68,1],marker='o',markersize=1,linestyle='-',color='w',lw=1) 
-    ax.axis('off')
-    plt.show()
+#     ax = fig.add_subplot(1, 2, 2)
+#     ax.imshow(img)
+#     ax.plot(preds[0:17,0],preds[0:17,1],marker='o',markersize=1,linestyle='-',color='w',lw=1)
+#     ax.plot(preds[17:22,0],preds[17:22,1],marker='o',markersize=1,linestyle='-',color='w',lw=1)
+#     ax.plot(preds[22:27,0],preds[22:27,1],marker='o',markersize=1,linestyle='-',color='w',lw=1)
+#     ax.plot(preds[27:31,0],preds[27:31,1],marker='o',markersize=1,linestyle='-',color='w',lw=1)
+#     ax.plot(preds[31:36,0],preds[31:36,1],marker='o',markersize=1,linestyle='-',color='w',lw=1)
+#     ax.plot(preds[36:42,0],preds[36:42,1],marker='o',markersize=1,linestyle='-',color='w',lw=1)
+#     ax.plot(preds[42:48,0],preds[42:48,1],marker='o',markersize=1,linestyle='-',color='w',lw=1)
+#     ax.plot(preds[48:60,0],preds[48:60,1],marker='o',markersize=1,linestyle='-',color='w',lw=1)
+#     ax.plot(preds[60:68,0],preds[60:68,1],marker='o',markersize=1,linestyle='-',color='w',lw=1) 
+#     ax.axis('off')
+#     plt.show()
 def clean_by_RT():
     n = 68
     _file = open(os.path.join( root , "txt/", "trian2.pkl"), "rb")
@@ -493,6 +518,49 @@ def clean_by_RT():
     with open(os.path.join(root, 'txt','train2_clean.pkl'), 'wb') as handle:
         pickle.dump(final, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
+
+
+
+def bbox2(lmark):
+    x_min = np.amin(lmark[:,0])
+    x_max = np.amax(lmark[:,0])
+    y_min = np.amin(lmark[:,1])
+    y_max = np.amax(lmark[:,1])
+    return x_min, y_min, x_max, y_max 
+def visualization_lmark():
+    n = 68
+        
+    rt_path = os.path.join(root, 'unzip', 'test_video/id04950/e1ZI2hKZJEs/00222' + '_sRT.npy' )
+    flmark_path = os.path.join(root, 'unzip','test_video/id04950/e1ZI2hKZJEs/00222'+ '_front.npy' )
+    olmark_path = os.path.join(root, 'unzip', 'test_video/id04950/e1ZI2hKZJEs/00222'+ '.npy' )
+
+    RT = np.load( rt_path)
+    flmark  = np.load( flmark_path)                               
+    olmark  = np.load( olmark_path)
+    flag = True
+    video_path = os.path.join(root, 'unzip', 'test_video/id04950/e1ZI2hKZJEs/00222' + '.mp4')
+
+    ani_video_path = os.path.join(root, 'unzip', 'test_video/id04950/e1ZI2hKZJEs/00222' + '_ani.mp4')
+    # ani_video_path ='fuck.mp4'
+    cap = cv2.VideoCapture(video_path)
+    cap_ani = cv2.VideoCapture(ani_video_path)
+    
+    print (flmark.shape)
+    for tt in range(flmark.shape[0]):                    
+        # recover the transformation
+        A3 = utils.reverse_rt(flmark[tt], RT[tt])
+
+        #vialisze the results            
+        ret, frame = cap.read()
+
+        ret, ani_frame = cap_ani.read()
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        ani_frame = cv2.cvtColor(ani_frame, cv2.COLOR_BGR2RGB)
+        if tt % 10 == 0:
+            vis([frame,flmark[tt], frame, A3, frame, olmark[tt],ani_frame, olmark[tt] ])
+            print (tt)
+                # break
+                                
 def label_id():
     root = '/data2/lchen63/voxceleb/'
     _file = open(os.path.join("/data2/lchen63/voxceleb/txt/", "train_clean.pkl"), "rb")
@@ -688,53 +756,6 @@ def compose_audio_lmark_dataset():
     with open(nname, 'wb') as handle:
         pickle.dump(new_data, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-def vis(img1,lmark1, img2, lmark2, img3,lmark3):
-#     img  = io.imread(img_path)
-    preds = lmark1
-    fig = plt.figure(figsize=plt.figaspect(.5))
-    ax = fig.add_subplot(1, 3, 1)
-    ax.imshow(img1)
-    ax.plot(preds[0:17,0],preds[0:17,1],marker='o',markersize=1,linestyle='-',color='w',lw=1)
-    ax.plot(preds[17:22,0],preds[17:22,1],marker='o',markersize=1,linestyle='-',color='w',lw=1)
-    ax.plot(preds[22:27,0],preds[22:27,1],marker='o',markersize=1,linestyle='-',color='w',lw=1)
-    ax.plot(preds[27:31,0],preds[27:31,1],marker='o',markersize=1,linestyle='-',color='w',lw=1)
-    ax.plot(preds[31:36,0],preds[31:36,1],marker='o',markersize=1,linestyle='-',color='w',lw=1)
-    ax.plot(preds[36:42,0],preds[36:42,1],marker='o',markersize=1,linestyle='-',color='w',lw=1)
-    ax.plot(preds[42:48,0],preds[42:48,1],marker='o',markersize=1,linestyle='-',color='w',lw=1)
-    ax.plot(preds[48:60,0],preds[48:60,1],marker='o',markersize=1,linestyle='-',color='w',lw=1)
-    ax.plot(preds[60:68,0],preds[60:68,1],marker='o',markersize=1,linestyle='-',color='w',lw=1) 
-    ax.axis('off')
-    
-    preds = lmark2
-    
-    ax = fig.add_subplot(1, 3, 2)
-    ax.imshow(img2)
-    ax.plot(preds[0:17,0],preds[0:17,1],marker='o',markersize=1,linestyle='-',color='w',lw=1)
-    ax.plot(preds[17:22,0],preds[17:22,1],marker='o',markersize=1,linestyle='-',color='w',lw=1)
-    ax.plot(preds[22:27,0],preds[22:27,1],marker='o',markersize=1,linestyle='-',color='w',lw=1)
-    ax.plot(preds[27:31,0],preds[27:31,1],marker='o',markersize=1,linestyle='-',color='w',lw=1)
-    ax.plot(preds[31:36,0],preds[31:36,1],marker='o',markersize=1,linestyle='-',color='w',lw=1)
-    ax.plot(preds[36:42,0],preds[36:42,1],marker='o',markersize=1,linestyle='-',color='w',lw=1)
-    ax.plot(preds[42:48,0],preds[42:48,1],marker='o',markersize=1,linestyle='-',color='w',lw=1)
-    ax.plot(preds[48:60,0],preds[48:60,1],marker='o',markersize=1,linestyle='-',color='w',lw=1)
-    ax.plot(preds[60:68,0],preds[60:68,1],marker='o',markersize=1,linestyle='-',color='w',lw=1) 
-    ax.axis('off')
-    
-    preds = lmark3
-    
-    ax = fig.add_subplot(1, 3, 3)
-    ax.imshow(img3)
-    ax.plot(preds[0:17,0],preds[0:17,1],marker='o',markersize=1,linestyle='-',color='w',lw=1)
-    ax.plot(preds[17:22,0],preds[17:22,1],marker='o',markersize=1,linestyle='-',color='w',lw=1)
-    ax.plot(preds[22:27,0],preds[22:27,1],marker='o',markersize=1,linestyle='-',color='w',lw=1)
-    ax.plot(preds[27:31,0],preds[27:31,1],marker='o',markersize=1,linestyle='-',color='w',lw=1)
-    ax.plot(preds[31:36,0],preds[31:36,1],marker='o',markersize=1,linestyle='-',color='w',lw=1)
-    ax.plot(preds[36:42,0],preds[36:42,1],marker='o',markersize=1,linestyle='-',color='w',lw=1)
-    ax.plot(preds[42:48,0],preds[42:48,1],marker='o',markersize=1,linestyle='-',color='w',lw=1)
-    ax.plot(preds[48:60,0],preds[48:60,1],marker='o',markersize=1,linestyle='-',color='w',lw=1)
-    ax.plot(preds[60:68,0],preds[60:68,1],marker='o',markersize=1,linestyle='-',color='w',lw=1) 
-    ax.axis('off')
-    plt.show()
 def compose_lmark_face_dataset():
     root  = '/data2/lchen63/voxceleb'
     lstm = False    
@@ -847,6 +868,7 @@ def compose_front():
     new_data = []
     # data= [['test_video/id03127/Zss2vvY2aLo',1254, ['00231']]]
     for index in range(len(data)):
+        print(index, len(data))
         # if index == 10:
         #     break
         tmp = data[index][0].split('/')
@@ -857,10 +879,8 @@ def compose_front():
             v_path =  os.path.join(root, 'unzip',data[index][0], data[index][2][0] + '.mp4' )
             rt = np.load( rt_path)
             v_id = os.path.join(data[index][0], data[index][2][0])
-
             lmark = np.load(o_lmark)
-
-            new_data.append([v_path, f_lmark, o_lmark , rt_path])
+            new_data.append([v_id])
             video_path = os.path.join(root, 'unzip', v_id +  '.mp4')
             cap = cv2.VideoCapture(video_path)
             frames = []
@@ -889,7 +909,7 @@ def compose_front():
                 v_path =  os.path.join(root, 'unzip',data[index][0], data[index][2][r] + '.mp4' )
 
                 v_id = os.path.join(data[index][0], data[index][2][r])
-                new_data.append([v_path, f_lmark, o_lmark , rt_path])
+                new_data.append([v_id])
                 rt = np.load(rt_path )
                 lmark = np.load(o_lmark)
                 video_path = os.path.join(root, 'unzip', v_id +  '.mp4')
@@ -918,19 +938,38 @@ def compose_front():
         pickle.dump(new_data, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 
+def for_3d_to_rgb(): # based on front_rt.pkl, remove the videos which not contain ani video
+    _pickle_file = os.path.join(root, 'txt','front_rt.pkl')
+    _file = open(_pickle_file, "rb")
+    data = pickle.load(_file)
+
+    new_data = []
+
+    for line in data:
+        print(line)
+        
+        ani_video_path = os.path.join(root, 'unzip', line[0] + '_ani.mp4')
+        if os.path.exists(ani_video_path):
+            new_data.append(line)
+    print (len(new_data))
+    with open(os.path.join(root, 'txt','front_rt2.pkl'), 'wb') as handle:
+        pickle.dump(new_data, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
 # def rotate_3d (rt, obj):
 
 
-
-
-compute_PCA()
+# visualization_lmark()  
+# 
+# vis3d()
+# for_3d_to_rgb()
+# compute_PCA()
 
 # rotate_3d('/test_video/id03127/Zss2vvY2aLo/00231_sRT.npy', '/test_video/id03127/Zss2vvY2aLo/00231.npy')
-# compose_front()
+compose_front()
 
 # compose_dataset()
 # compose_lmark_face_dataset()
-clean_by_RT()
+# clean_by_RT()
 # video2img2lmark()
 # compute_RT()
 # audio2mfcc('/data2/lchen63/voxceleb/txt/v_test.txt')

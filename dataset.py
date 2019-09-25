@@ -16,7 +16,7 @@ from numpy import *
 from scipy.spatial.transform import Rotation as R
 import time
 from util import utils
-
+import mmcv
 
 def readVideo(self, videoFile):
     # Open the video file
@@ -231,16 +231,161 @@ class Voxceleb_lmark_rgb_single(data.Dataset):
             input_lmark = lmark[sample_id,:, :-1]
             input_dict = {'in_lmark': input_lmark ,'lmark_base': lmark_base,  'lip_base': lip_base, 'gt_img': gt_img, 'mismatch_img': mismatch_img}
             return (input_dict)   
-            
 
 
 
+def bbox2(lmark):
+    x_min = np.amin(lmark[:,0])
+    x_max = np.amax(lmark[:,0])
+    y_min = np.amin(lmark[:,1])
+    y_max = np.amax(lmark[:,1])
+    return x_min, y_min, x_max, y_max 
+class Voxceleb_mfcc_rgb_single(data.Dataset):
+    def __init__(self, dataset_dir, train='train'):
+        self.train = train
+        self.output_shape   = tuple([256, 256])
+        self.num_frames = 64  
+        self.root  = '/home/cxu-serve/p1/lchen63/voxceleb/'      
+        if self.train =='train':
+            _file = open(os.path.join(dataset_dir, "front_rt2.pkl"), "rb")
+            self.data = pickle.load(_file)
+            _file.close()
+        elif self.train =='test':
+            _file = open(os.path.join(dataset_dir, "front_rt2.pkl"), "rb")
+            self.data = pickle.load(_file)
+            _file.close()
+        print (len(self.data))
+        self.transform = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
+        ])
+    def __getitem__(self, index):
+        
+        v_id = self.data[index][0]
+        reference_id = self.data[index][1]
+
+        video_path = os.path.join(self.root, 'unzip', v_id + '.mp4')
+        
+        ani_video_path = os.path.join(self.root, 'unzip', v_id + '_ani.mp4')
+
+        mfcc_path = os.path.join(self.root, 'unzip',v_id.replace('video','audio')+'.npy' )
+
+        
+
+        real_video  = mmcv.VideoReader(video_path)
+        ani_video = mmcv.VideoReader(ani_video_path)
+
+        v_length = len(real_video)
+
+        mfcc = np.load(mfcc_path)
+        audio_length = mfcc.shape[0]
+
+        # if mfcc length is not v_length * 4 , we pad 0s at the end of mfcc.
+        audio_pad = np.zeros((v_length * 4, 13))
+        if audio_length < v_length * 4 :
+            audio_pad[:audio_length] = mfcc
+            mfcc = audio_pad
+        
+        # we randomly choose a target frame
+        while True:
+            target_id =  np.random.choice([0, v_length - 1])
+            if target_id != reference_id:
+                break
+        
+        target_rgb = real_video[target_id]
+
+        
+
+    
 
 
+        # if target frame is at the begining or end, we need to pad 0s to mfcc.
+        if target_id < 3:
+            sample_audio = np.zeros((28,12))
+            sample_audio[4 * (3- target_id): ] = mfcc[4 * (0) : 4 * ( 3 + target_id + 1 ), 1: ]
+
+        elif target_id > v_length - 4:
+            sample_audio = np.zeros((28,12))
+            sample_audio[:4 * ( v_length + 3 - target_id )] = mfcc[4 * (target_id -3) : 4 * ( v_length ), 1: ]
+
+        else:
+            sample_audio = mfcc[4 * (target_id -3) : 4 * ( target_id + 4 ) , 1: ]
+
+        reference_rgb = real_video[reference_id]
+
+        reference_ani = ani_video[reference_id]
+
+        target_ani = ani_video[target_id]
+        
+
+        t_lmark = np.load(os.path.join(self.root, 'unzip', v_id + '.npy'))        
+        t_lmark = t_lmark[target_id]
+        x_min, y_min, x_max, y_max = bbox2(t_lmark) # x,y is top left poit, with w and  h. Different image have different h,w
+        x_min, y_min, x_max, y_max = int(x_min) ,int(y_min),int(x_max) ,int(y_max)
+        print (type(target_rgb))
+        cv2.rectangle(target_rgb,(x_min,y_min),(x_max,y_max),(0,255,0),2)
+        # img  = target_rgb[int(x_min):int(x_max),int(y_min) :int(y_max),:]
+
+        # img = mmcv.bgr2rgb(img)
+        # # target_rgb = cv2.cvtColor(target_rgb, cv2.COLOR_BGR2RGB)
+        # img = cv2.resize(img, self.output_shape)
+        # img = self.transform(img)
+
+        target_rgb = mmcv.bgr2rgb(target_rgb)
+        # target_rgb = cv2.cvtColor(target_rgb, cv2.COLOR_BGR2RGB)
+        target_rgb = cv2.resize(target_rgb, self.output_shape)
+        target_rgb = self.transform(target_rgb)
+
+        target_ani = mmcv.bgr2rgb(target_ani)
+        # target_ani = cv2.cvtColor(target_ani, cv2.COLOR_BGR2RGB)
+        target_ani = cv2.resize(target_ani, self.output_shape)
+        target_ani = self.transform(target_ani)
+
+        reference_rgb = mmcv.bgr2rgb(reference_rgb)
+        # reference_rgb = cv2.cvtColor(reference_rgb, cv2.COLOR_BGR2RGB)
+        reference_rgb = cv2.resize(reference_rgb, self.output_shape)
+        reference_rgb = self.transform(reference_rgb)
+        
+        reference_ani = mmcv.bgr2rgb(reference_ani)
+        # reference_ani = cv2.cvtColor(reference_ani, cv2.COLOR_BGR2RGB)
+        reference_ani = cv2.resize(reference_ani, self.output_shape)
+        reference_ani = self.transform(reference_ani)
 
 
+        sample_audio =torch.FloatTensor(sample_audio)
 
+        
+        ### we will not write mismatch in this version.
+        input_dict = { 'id' : v_id, 'reference_rgb': reference_rgb ,'reference_ani': reference_ani,
+                        'sample_audio': sample_audio, 'target_rgb': target_rgb, 'target_ani': target_ani}
+        # input_dict = { 'id' : v_id, 'reference_rgb': reference_rgb ,'reference_ani': reference_ani,
+        #                 'sample_audio': sample_audio, 'target_rgb': target_rgb, 'target_ani': target_ani, 'img' : img}
+        return (input_dict)   
+    def __len__(self):        
+            return len(self.data)
+        
+import torchvision
 
+import time
+dataset = Voxceleb_mfcc_rgb_single('/home/cxu-serve/p1/lchen63/voxceleb/txt/', 'train')
+data_loader = data.DataLoader(dataset,
+                          batch_size=2,
+                          num_workers=4,
+                          shuffle=True, drop_last=True)  
+t1 = time.time()
+print (len(data_loader))
+for (step, gg)  in enumerate(data_loader):
+    print (time.time() -  t1)
+    print (gg['id'])
+    inputs = [gg['reference_ani'], gg['reference_rgb'], gg['target_ani'], gg['target_rgb']]
+    fake_im = torch.stack(inputs, dim = 1)
+    fake_store = fake_im.data.contiguous().view(4*2,3,256,256)
+    torchvision.utils.save_image(fake_store, 
+        "./tmp/fuck_%05d.png"%step,normalize=True)
+    
+    if step == 10:
+        break
+   
 
 
 
@@ -251,6 +396,7 @@ class Voxceleb_audio_lmark_single(data.Dataset):
                  train='train',
                  gan = True):
         self.train = train  
+        # self.root = '/data2/lchen63/voxceleb/'
         self.root  = '/home/cxu-serve/p1/lchen63/voxceleb/' 
         # self.lip_pca = torch.FloatTensor( np.load('./basics/U_front.npy')[:,:6])#.cuda()
         # self.lip_mean =torch.FloatTensor( np.load('./basics/mean_front.npy'))#.cuda()
@@ -589,8 +735,7 @@ class Grid_audio_lmark_single(data.Dataset):
 class Grid_audio_lmark_single_whole(data.Dataset):
     def __init__(self,
                  dataset_dir,
-                 train='train',
-                 gan = True):
+                 train='train'):
         self.train = train  
         self.root  = '/data/lchen63/grid/zip/' 
      
@@ -957,32 +1102,3 @@ class Voxceleb_face_region(data.Dataset):
 
         
 
-# import os
-# import glob
-# import time
-# import torch
-# import torch.utils
-# import torch.nn as nn
-# import torchvision
-# from torch.autograd import Variable
-# from torch.utils.data import DataLoader
-# from torch.nn.modules.module import _addindent
-# import numpy as np
-# from collections import OrderedDict
-# import argparse        
-# dataset = Grid_audio_lmark_single('/data/lchen63/grid/zip/txt/', 'test')
-# data_loader = DataLoader(dataset,
-#                           batch_size=1,
-#                           num_workers=1,
-#                           shuffle=False, drop_last=True)  
-# t1 = time.time()
-# for step, data in enumerate(data_loader):
-#     print (step)
-#     print ( time.time() - t1 )
-#     t1 = time.time()
-#     print(step)
-#     print (data['img_path'])
-#     if step == 1:
-#         break
-#     print (data['audio'].shape)
-#     print (data['lip_region'].shape)
