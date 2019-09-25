@@ -38,8 +38,8 @@ def parse_args():
 config = parse_args()
 
 
-# root = '/data2/lchen63/voxceleb/'
-root ='/home/cxu-serve/p1/lchen63/voxceleb/'
+root = '/data2/lchen63/voxceleb/'
+# root ='/home/cxu-serve/p1/lchen63/voxceleb/'
 # fa = face_alignment.FaceAlignment(face_alignment.LandmarksType._3D, flip_input=False)#,  device='cpu')
 
 
@@ -965,11 +965,11 @@ def for_3d_to_rgb(): # based on front_rt.pkl, remove the videos which not contai
 # compute_PCA()
 
 # rotate_3d('/test_video/id03127/Zss2vvY2aLo/00231_sRT.npy', '/test_video/id03127/Zss2vvY2aLo/00231.npy')
-compose_front()
+# compose_front()
 
 # compose_dataset()
 # compose_lmark_face_dataset()
-# clean_by_RT()
+clean_by_RT()
 # video2img2lmark()
 # compute_RT()
 # audio2mfcc('/data2/lchen63/voxceleb/txt/v_test.txt')
