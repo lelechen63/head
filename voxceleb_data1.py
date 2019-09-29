@@ -38,8 +38,8 @@ def parse_args():
 config = parse_args()
 
 
-root = '/data2/lchen63/voxceleb/'
-# root ='/home/cxu-serve/p1/lchen63/voxceleb/'
+# root = '/data2/lchen63/voxceleb/'
+root ='/home/cxu-serve/p1/lchen63/voxceleb/'
 # fa = face_alignment.FaceAlignment(face_alignment.LandmarksType._3D, flip_input=False)#,  device='cpu')
 
 
@@ -143,18 +143,20 @@ import cv2
 import os
 import mmcv
 def vis3d():
-    v_path = os.path.join(root, 'unzip', 'test_video/id04950/e1ZI2hKZJEs/00219' + '.mp4' )
-    lmark_path = os.path.join(root, 'unzip', 'test_video/id04950/e1ZI2hKZJEs/00219_prnet' + '.npy' )
+    v_path = os.path.join(root, 'unzip', 'test_video/id03862/jc6k4sbenMY/00366' + '.mp4' )
+    lmark_path = os.path.join(root, 'unzip', 'test_video/id03862/jc6k4sbenMY/00366_prnet' + '.npy' )
+    # lmark_path = os.path.join(root, 'unzip', 'test_video/id04276/k0zLls_oen0/00341_prnet' + '.npy' )
     cap  =  cv2.VideoCapture(v_path)
     lmark = np.load(lmark_path)
     print (lmark.shape)
+    print (lmark[0])
     count = 0
     tmp = v_path.split('/')
     real_video  = mmcv.VideoReader(v_path)
     for count in range(0,100):
         input = real_video[count]
         input = mmcv.bgr2rgb(input)
-        preds = lmark
+        preds = lmark#[count]
         #TODO: Make this nice
         fig = plt.figure(figsize=plt.figaspect(.5))
         ax = fig.add_subplot(1, 2, 1)
@@ -528,19 +530,23 @@ def bbox2(lmark):
     y_max = np.amax(lmark[:,1])
     return x_min, y_min, x_max, y_max 
 def visualization_lmark():
-    n = 68
-        
-    rt_path = os.path.join(root, 'unzip', 'test_video/id04950/e1ZI2hKZJEs/00222' + '_sRT.npy' )
-    flmark_path = os.path.join(root, 'unzip','test_video/id04950/e1ZI2hKZJEs/00222'+ '_front.npy' )
-    olmark_path = os.path.join(root, 'unzip', 'test_video/id04950/e1ZI2hKZJEs/00222'+ '.npy' )
+    n = 79
+    v_id = 'test_video/id04276/k0zLls_oen0/00341' 
+    rt_path = os.path.join(root, 'unzip', v_id + '_sRT.npy' )
+    flmark_path = os.path.join(root, 'unzip', v_id + '_front.npy' )
+    olmark_path = os.path.join(root, 'unzip',  v_id + '.npy' )
+
+    prnet_lmark_path = os.path.join(root, 'unzip',  v_id + '_prnet.npy' )
 
     RT = np.load( rt_path)
     flmark  = np.load( flmark_path)                               
     olmark  = np.load( olmark_path)
+    prnet_lmark = np.load(prnet_lmark_path)
+    prnet_lmark[:,1] = 224- prnet_lmark[:,1]
     flag = True
-    video_path = os.path.join(root, 'unzip', 'test_video/id04950/e1ZI2hKZJEs/00222' + '.mp4')
+    video_path = os.path.join(root, 'unzip', v_id + '.mp4')
 
-    ani_video_path = os.path.join(root, 'unzip', 'test_video/id04950/e1ZI2hKZJEs/00222' + '_ani.mp4')
+    ani_video_path = os.path.join(root, 'unzip', v_id  + '_ani.mp4')
     # ani_video_path ='fuck.mp4'
     cap = cv2.VideoCapture(video_path)
     cap_ani = cv2.VideoCapture(ani_video_path)
@@ -556,8 +562,8 @@ def visualization_lmark():
         ret, ani_frame = cap_ani.read()
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         ani_frame = cv2.cvtColor(ani_frame, cv2.COLOR_BGR2RGB)
-        if tt % 10 == 0:
-            vis([frame,flmark[tt], frame, A3, frame, olmark[tt],ani_frame, olmark[tt] ])
+        if tt == n :
+            vis([frame,flmark[tt], frame, A3, frame, olmark[tt],ani_frame, olmark[tt], frame, prnet_lmark  ])
             print (tt)
                 # break
                                 
@@ -961,7 +967,7 @@ def for_3d_to_rgb(): # based on front_rt.pkl, remove the videos which not contai
 # visualization_lmark()  
 # 
 # vis3d()
-# for_3d_to_rgb()
+for_3d_to_rgb()
 # compute_PCA()
 
 # rotate_3d('/test_video/id03127/Zss2vvY2aLo/00231_sRT.npy', '/test_video/id03127/Zss2vvY2aLo/00231.npy')
@@ -969,7 +975,7 @@ def for_3d_to_rgb(): # based on front_rt.pkl, remove the videos which not contai
 
 # compose_dataset()
 # compose_lmark_face_dataset()
-clean_by_RT()
+# clean_by_RT()
 # video2img2lmark()
 # compute_RT()
 # audio2mfcc('/data2/lchen63/voxceleb/txt/v_test.txt')

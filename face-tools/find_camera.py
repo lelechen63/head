@@ -33,6 +33,7 @@ def recover(rt):
 
 def load_obj(obj_file):
     vertices = []
+
     triangles = []
     colors = []
 
@@ -84,7 +85,7 @@ def demo():
 
     # load the 3D facial landmarks on the PRNet 3D reconstructed face
     lmk3d_origin = np.load("{}/{}_prnet.npy".format(model_id, model_id))
-    lmk3d_origin[:,1] = res - lmk3d_origin[:,1]
+    # lmk3d_origin[:,1] = res - lmk3d_origin[:,1]
 
     # load RTs for all frame
     rots, trans = recover(np.load("{}/{}_sRT.npy".format(model_id, model_id)))
@@ -134,7 +135,7 @@ def demo():
     plt.show()
 
 
-def get():
+def get(batch = 0 ):
     # key_id = 58 #
     # model_id = "00025"
 
@@ -144,9 +145,19 @@ def get():
 
     data = data.load()
     _file.close()
-    for item in data:
+    flage = False
+    for k, item in enumerate(data[2000* batch:2000* (batch + 1)]):
+        
+
+
         key_id = item[-1]
-        video_path = item[0]
+        # if  k == 5689:
+        #     flage = True
+
+        # if flage == False:
+        #     continue
+        print ('++++++++++++++++++++++++++++++++%d'%(k + 2000* batch))
+        video_path = os.path.join(root, 'unzip', item[0] + '.mp4') 
 
         reference_img_path = video_path[:-4] + '_%05d.png'%key_id
 
@@ -155,15 +166,16 @@ def get():
         original_obj_path = video_path[:-4] + '_original.obj'
 
         rt_path  = video_path[:-4] + '_sRT.npy'
-        lmark_path  = video_path[:-4] +'.npy'
+        lmark_path  = video_path[:-4] +'_front.npy'
 
 
         # if os.path.exists( video_path[:-4] + '_ani.mp4'):
         #     print ('=====')
         #     continue
 
-        if  not os.path.exists(original_obj_path):
-            print ('original_obj_path')
+        if  not os.path.exists(original_obj_path) or not os.path.exists(reference_prnet_lmark_path) or not os.path.exists(lmark_path) or not os.path.exists(rt_path):
+            
+            print (original_obj_path)
             print ('++++')
             continue
 
@@ -195,15 +207,14 @@ def get():
         renderer = setup_renderer()
         # generate animation
 
-
+        temp_path = './tempo_%05d'%batch
 
         # generate animation
-        if os.path.exists('./tempo'):
-            shutil.rmtree('./tempo')
-        os.mkdir('./tempo')
+        if os.path.exists(temp_path):
+            shutil.rmtree(temp_path)
+        os.mkdir(temp_path)
         # writer = imageio.get_writer('rotation.gif', mode='I')
         for i in range(rots.shape[0]):
-
                 # get rendered frame
             vertices = (rots[i].T @ (vertices_origin_affine.T - trans[i])).T
             face_mesh = sr.Mesh(vertices, triangles, colors, texture_type="vertex")
@@ -211,13 +222,15 @@ def get():
             
             #save rgba image as bgr in cv2
             rgb_frame =  (image_render).astype(int)[:,:,:-1][...,::-1]
-            cv2.imwrite("./tempo/%05d.png"%i, rgb_frame)  
-        command = 'ffmpeg -framerate 25 -i ./tempo/%5d.png  -c:v libx264 -y -vf format=yuv420p ' +   video_path[:-4] + '_ani.mp4'
+            cv2.imwrite( temp_path +  "/%05d.png"%i, rgb_frame)  
+        command = 'ffmpeg -framerate 25 -i '  + temp_path + '/%5d.png  -c:v libx264 -y -vf format=yuv420p ' +   video_path[:-4] + '_ani.mp4'
         os.system(command)
-
-def gg():
-    key_id = 58 #
-    video_path = '/home/cxu-serve/p1/lchen63/voxceleb/unzip/test_video/id04950/e1ZI2hKZJEs/00221.mp4'
+        # break
+import mmcv
+def vis_single(video_path, key_id, save_name):
+    overlay = True
+    #key_id = 79 #
+    #video_path = '/home/cxu-serve/p1/lchen63/voxceleb/unzip/test_video/id04276/k0zLls_oen0/00341.mp4'
     reference_img_path = video_path[:-4] + '_%05d.png'%key_id
     reference_prnet_lmark_path = video_path[:-4] +'_prnet.npy'
 
@@ -225,7 +238,7 @@ def gg():
 
     rt_path  = video_path[:-4] + '_sRT.npy'
 
-    lmark_path  = video_path[:-4] +'.npy'
+    lmark_path  = video_path[:-4] +'_front.npy'
 
 
 
@@ -237,8 +250,6 @@ def gg():
     # load the 3D facial landmarks on the PRNet 3D reconstructed face
     lmk3d_origin = np.load(reference_prnet_lmark_path)
     # lmk3d_origin[:,1] = res - lmk3d_origin[:,1]
-    
-    
 
 
     # load RTs
@@ -261,7 +272,8 @@ def gg():
     if os.path.exists('./tempo1'):
         shutil.rmtree('./tempo1')
     os.mkdir('./tempo1')
-
+    if overlay:
+        real_video = mmcv.VideoReader(video_path)
 
     for i in range(rots.shape[0]):
         t = time.time()
@@ -276,7 +288,8 @@ def gg():
         print (image_render.min())
         #save rgba image as bgr in cv2
         rgb_frame =  (image_render ).astype(int)[:,:,:-1][...,::-1]
-        cv2.imwrite("./tempo1/%05d.png"%i, rgb_frame)
+        overla_frame = (0.5* rgb_frame + 0.5 * real_video[i]).astype(int)
+        cv2.imwrite("./tempo1/%05d.png"%i, overla_frame)
 
 
         print (time.time() - t)
@@ -284,14 +297,36 @@ def gg():
 
         print("[{}/{}]".format(i+1, rots.shape[0]))    
         # if i == 5:
-        #     break
+        #     breakT
     t = time.time()
-    ani_mp4_file_name = './fuck.mp4'
+    ani_mp4_file_name = save_name  # './fuck.mp4'
     command = 'ffmpeg -framerate 25 -i ./tempo1/%5d.png  -c:v libx264 -y -vf format=yuv420p ' + ani_mp4_file_name 
     os.system(command)
     print (time.time() - t)
     
+import random    
+def gg():
+    _file = open(os.path.join(root, 'txt',  "front_rt.pkl"), "rb")
+    data = pickle._Unpickler(_file)
+    data.encoding = 'latin1'
 
+    data = data.load()
+    _file.close()
+    print (len(data))
+    # random.shuffle(data)
+    for k, item in enumerate(data):
+
+
+
+        key_id = item[-1]
+        
+        video_path = os.path.join(root, 'unzip', item[0] + '_ani.mp4')
+        # save_name = './tempo2/' + item[0].replace('/', '_') + '.mp4' 
+        if k % 10 ==0 and k > 1800 and k < 1900:
+            print (video_path)
+        # vis_single(video_path, key_id, save_name)
+        # if k == 10:
+        #     break
 # demo()
 # gg()
-get()
+get(6)

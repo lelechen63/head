@@ -149,12 +149,12 @@ def _apply(layer, activation, normalizer, channel_out=None):
     if normalizer:
         layer.append(normalizer(channel_out))
     if activation:
-        layer.append(activation())
+        layer.append(activation)
     return layer
 
 def conv2d(channel_in, channel_out,
            ksize=3, stride=1, padding=1,
-           activation=nn.ReLU,
+           activation=nn.LeakyReLU(0.2, True),
            normalizer=nn.BatchNorm2d):
     layer = list()
     bias = True if not normalizer else False
@@ -711,32 +711,47 @@ class FaceNet2(nn.Module):
 
 
     
-class FaceNet_single(nn.Module):
+class MFCC_Face_single(nn.Module):
     def __init__(self ):
-        super(FaceNet_single,self).__init__()
+        super(MFCC_Face_single,self).__init__()
         dtype            = torch.FloatTensor
         self.facer_encoder1 = nn.Sequential(
             nn.ReflectionPad2d(3),
             conv2d(3, 64, 7,1, 0),
-            conv2d(64,128,3,2,1),
-            conv2d(128,128,3,2,1),
-            conv2d(128,256, 3,2,1),) #32
+            conv2d(64,128,3,2,1), #128
+            conv2d(128,128,3,2,1), # 64
+            conv2d(128,256, 3,2,1)) #32
         self.facer_encoder2 = nn.Sequential(
             conv2d(256,256, 3,2,1), #16
             conv2d(256,512,3,2,1), #8
             conv2d(512,512,3,2,1)  #4
             )
 #         self.fc = nn.Linear(512 , 256)
-            
-        use_bias = 'False'
-        norm_layer = nn.BatchNorm2d
-        self.landmark_encoder = nn.Sequential(
-            nn.Linear(136, 256),
+        self.mfcc_eocder = nn.Sequential(
+            conv2d(1,64,3,1,1),
+            conv2d(64,128,3,1,1),
+            nn.MaxPool2d(3, stride=(2,1)),
+            conv2d(128,256,3,1,1),
+            conv2d(256,256,3,1,1),
+            nn.MaxPool2d(3, stride=(2,2)),
+            conv2d(256,512,3,1,1),
+            nn.MaxPool2d(3, stride=(2,2))
+            ) 
+        self.audio_fc = nn.Sequential(
+            nn.Linear(1024, 512),
             nn.ReLU(True),
-            nn.Linear(256, 512),
-            nn.ReLU(inplace=True),
-            )
-        
+        )
+        use_bias = 'False'
+        norm_layer = nn.BatchNorm2d 
+        # self.3d_encoder = nn.Sequential(
+            # nn.Linear(136, 256),
+            # nn.ReLU(True),
+            # nn.Linear(256, 512),
+            # nn.ReLU(inplace=True),
+            # )
+        self.bottle = nn.Sequential(
+            conv2d(1024, 512,3,1,1)
+        )
         model = []
         for i in range(9):
             model += [ResnetBlock(512, padding_type='zero', norm_layer=norm_layer, use_dropout=True, use_bias=False)]
@@ -789,89 +804,94 @@ class FaceNet_single(nn.Module):
         model += [nn.Tanh()]
         self.img_decoder2 = nn.Sequential(*model)
         
-        
-#         self.sigmoid = nn.Sigmoid()
-#         self.maxpool2d = nn.MaxPool2d(kernel_size = 64, stride = (1,1))
-        
-#         self.lmark_fc  = nn.Sequential(
-#             nn.Linear(128, 1024),
-#             nn.ReLU(True))
+      
             
      
-    def forward(self,example_lip, example_lmark, current_lmark ):
-        
-        current_lmark_feature = self.landmark_encoder(current_lmark)
-       
-        ff1 = self.facer_encoder1(example_lip)
-            
+    def forward(self, warped_img, mfcc  ):
+        mfcc_feature = self.mfcc_eocder(mfcc)
+        ff1 = self.facer_encoder1(warped_img)
         ff2 = self.facer_encoder2(ff1)
-        
-        lmark_feature = self.landmark_encoder(example_lmark)      
-        
-        
-        lmark_difference = current_lmark_feature - lmark_feature
-        
-        lmark_difference = lmark_difference.unsqueeze(2).unsqueeze(3).repeat(1,1,4,4)
-        
-        new_img_f = ff2 + lmark_difference
-        
+        mfcc_feature = mfcc_feature.view(mfcc_feature.size(0), -1)
+        mfcc_feature = self.audio_fc(mfcc_feature)
+        mfcc_feature = mfcc_feature.unsqueeze(2).unsqueeze(3).repeat(1,1,4,4)
+        new_img_f = torch.cat([ff2, mfcc_feature], 1)
+        new_img_f  = self.bottle(new_img_f)
         new_img_ff = self.img_decoder1(new_img_f)
-        
         new_img = self.img_decoder2( torch.cat([new_img_ff, ff1 ], 1) )
         
         
         return new_img
         
-        
-        
-        
-      
-       
-
-
-class FaceNet_Discriminator(nn.Module):
+class VG_base_Discriminator(nn.Module):
     def __init__(self):
-        super(FaceNet_Discriminator, self).__init__()
+        super(VG_base_Discriminator, self).__init__()
 
-        self.lip_encoder = nn.Sequential(
+        self.face_encoder = nn.Sequential(
             nn.ReflectionPad2d(3),
             conv2d(3 , 64, 7,1, 0),
-            conv2d(64,64,3,2,1),
-            conv2d(64,128,3,2,1),
-            conv2d(128,128, 3,2,1),
-            conv2d(128,256, 3,2,1),
-            conv2d(256,256, 3,2,1),
-            conv2d(256,512,3,2,1),
-            conv2d(512,512,3,2,1)
+            conv2d(64,64,3,2,1),  #128
+            conv2d(64,128,3,2,1),  #64
+            conv2d(128,128, 3,2,1),  #32
+            conv2d(128,256, 3,2,1),  #16
+            conv2d(256,256, 3,2,1),  #4
+            conv2d(256,512,3,2,1),  #2
+            # conv2d(512,512,3,2,1)  #1
             )
-        self.landmark_encoder = nn.Sequential(
-            nn.Linear(136, 128),
+        self.mfcc_eocder = nn.Sequential(
+            conv2d(1,64,3,1,1),
+            conv2d(64,128,3,1,1),
+            nn.MaxPool2d(3, stride=(2,1)),
+            conv2d(128,256,3,1,1),
+            conv2d(256,256,3,1,1),
+            nn.MaxPool2d(3, stride=(2,2)),
+            conv2d(256,512,3,1,1),
+            nn.MaxPool2d(3, stride=(2,2))
+            ) 
+        self.mfcc_fc = nn.Sequential(
+            nn.Linear(1024, 512),
             nn.ReLU(True),
-            nn.Linear(128, 256),
-            nn.ReLU(inplace=True),
-            )
+        )
         
-        self.img_fc = nn.Sequential(
-            nn.Linear(512*2*2, 512),
-            nn.ReLU(True),
-            )
+        
         self.decision = nn.Sequential(
-            nn.Linear(512 + 256, 256),
-            nn.ReLU(True),
-            nn.Linear(256,1),
+            conv2d(1024,128, 3,2,1),  #4
+            nn.Conv2d(128,1,3,2,1), 
             nn.Sigmoid()
             )
         
-    def forward(self, lip , lmark):
+    def forward(self, img , mfcc):
         
-        lmark_feature= self.landmark_encoder(lmark)
-        img_feature = self.lip_encoder(lip)
-        img_feature= img_feature.view(img_feature.shape[0], -1)
-        img_feature = self.img_fc(img_feature)
-        merge_feature = torch.cat([img_feature, lmark_feature], dim = 1)
+        mfcc_feature= self.mfcc_eocder(mfcc)
+        mfcc_feature = mfcc_feature.view(mfcc_feature.shape[0], -1)
+        mfcc_feature = self.mfcc_fc(mfcc_feature)
+        mfcc_feature = mfcc_feature.unsqueeze(2).unsqueeze(3).repeat(1,1,4,4)
+
+
+
+        img_feature = self.face_encoder(img)
+        merge_feature = torch.cat([img_feature, mfcc_feature], dim = 1)
         decision = self.decision(merge_feature)
         return decision.view(decision.size(0))
      
+# from torch.autograd import Variable
+
+# import numpy as np
+
+# model = FaceNet_Discriminator().cuda()
+# torch.set_printoptions(precision=6)
+
+# a = torch.zeros(2, 1, 28,12).cuda()
+
+# a = a + 0.0001
+# a = Variable(a)
+
+# # print (a.data)
+# a.shape
+# b = torch.FloatTensor(2, 3, 256, 256).cuda()
+# b = Variable(b)
+
+# g= model(b, a)
+# # print ('================')
 
 class AT_single(nn.Module):
     def __init__(self):

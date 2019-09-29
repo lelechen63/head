@@ -233,13 +233,27 @@ class Voxceleb_lmark_rgb_single(data.Dataset):
             return (input_dict)   
 
 
+def create_rectangle_mask(  xcorners, ycorners   ):
+    '''
+    Give image and x/y coners to create a rectangle mask    
+    image: 2d array
+    xcorners, list, points of x coners
+    ycorners, list, points of y coners
+    Return:
+    the polygon mask: 2d array, the polygon pixels with values 1 and others with 0
+    
+    Example:
+    
+    
+    '''
+    from skimage.draw import line_aa, line, polygon, circle    
+    bst_mask = np.ones( (224,224,1) , dtype = float32)   
+    rr, cc = polygon( ycorners,xcorners)
+    bst_mask[ rr,cc, 0] = 0    
+    #full_mask= ~bst_mask    
+    return bst_mask 
 
-def bbox2(lmark):
-    x_min = np.amin(lmark[:,0])
-    x_max = np.amax(lmark[:,0])
-    y_min = np.amin(lmark[:,1])
-    y_max = np.amax(lmark[:,1])
-    return x_min, y_min, x_max, y_max 
+
 class Voxceleb_mfcc_rgb_single(data.Dataset):
     def __init__(self, dataset_dir, train='train'):
         self.train = train
@@ -259,6 +273,7 @@ class Voxceleb_mfcc_rgb_single(data.Dataset):
             transforms.ToTensor(),
             transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
         ])
+        # self.lip_region= [48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59]
     def __getitem__(self, index):
         
         v_id = self.data[index][0]
@@ -269,6 +284,10 @@ class Voxceleb_mfcc_rgb_single(data.Dataset):
         ani_video_path = os.path.join(self.root, 'unzip', v_id + '_ani.mp4')
 
         mfcc_path = os.path.join(self.root, 'unzip',v_id.replace('video','audio')+'.npy' )
+
+        lmark_path = os.path.join(self.root, 'unzip', v_id + '.npy')
+
+        
 
         
 
@@ -294,11 +313,6 @@ class Voxceleb_mfcc_rgb_single(data.Dataset):
         
         target_rgb = real_video[target_id]
 
-        
-
-    
-
-
         # if target frame is at the begining or end, we need to pad 0s to mfcc.
         if target_id < 3:
             sample_audio = np.zeros((28,12))
@@ -317,19 +331,15 @@ class Voxceleb_mfcc_rgb_single(data.Dataset):
 
         target_ani = ani_video[target_id]
         
-
-        t_lmark = np.load(os.path.join(self.root, 'unzip', v_id + '.npy'))        
-        t_lmark = t_lmark[target_id]
-        x_min, y_min, x_max, y_max = bbox2(t_lmark) # x,y is top left poit, with w and  h. Different image have different h,w
-        x_min, y_min, x_max, y_max = int(x_min) ,int(y_min),int(x_max) ,int(y_max)
-        print (type(target_rgb))
-        cv2.rectangle(target_rgb,(x_min,y_min),(x_max,y_max),(0,255,0),2)
-        # img  = target_rgb[int(x_min):int(x_max),int(y_min) :int(y_max),:]
-
-        # img = mmcv.bgr2rgb(img)
-        # # target_rgb = cv2.cvtColor(target_rgb, cv2.COLOR_BGR2RGB)
-        # img = cv2.resize(img, self.output_shape)
-        # img = self.transform(img)
+       
+        # target_lmark = np.load(lmark_path)[target_id][48:60,:-1]
+        # mask = create_rectangle_mask(target_lmark[:,0],target_lmark[:,1])
+#   
+#         mask = mask.astype(float32)
+# # 
+        # mask = cv2.resize(mask , self.output_shape)  
+        # mask = np.expand_dims(mask, axis=2)
+        # print (np.unique(mask))
 
         target_rgb = mmcv.bgr2rgb(target_rgb)
         # target_rgb = cv2.cvtColor(target_rgb, cv2.COLOR_BGR2RGB)
@@ -337,9 +347,26 @@ class Voxceleb_mfcc_rgb_single(data.Dataset):
         target_rgb = self.transform(target_rgb)
 
         target_ani = mmcv.bgr2rgb(target_ani)
-        # target_ani = cv2.cvtColor(target_ani, cv2.COLOR_BGR2RGB)
         target_ani = cv2.resize(target_ani, self.output_shape)
+        # target_ani =  target_ani * mask
         target_ani = self.transform(target_ani)
+        mask = target_ani[0].clone()
+        
+        mask = mask >  -0.9
+        mask = mask.type(torch.FloatTensor)
+
+    
+
+        # target_ani = ((target_ani + 1 )/2.0
+        # print (target_ani.max())
+        # print (target_ani.min())
+
+        # mask  = target_ani[0] > 0
+        # mask = mask.float()
+        # print (mask.shape)
+        # print (mask.max())
+        # print(mask.min())
+
 
         reference_rgb = mmcv.bgr2rgb(reference_rgb)
         # reference_rgb = cv2.cvtColor(reference_rgb, cv2.COLOR_BGR2RGB)
@@ -353,38 +380,51 @@ class Voxceleb_mfcc_rgb_single(data.Dataset):
 
 
         sample_audio =torch.FloatTensor(sample_audio)
-
+        sample_audio = sample_audio.unsqueeze(0)
+     
         
+        final_img = reference_rgb * torch.abs(1 - mask) + (target_ani) * mask
+       
         ### we will not write mismatch in this version.
-        input_dict = { 'id' : v_id, 'reference_rgb': reference_rgb ,'reference_ani': reference_ani,
-                        'sample_audio': sample_audio, 'target_rgb': target_rgb, 'target_ani': target_ani}
+        input_dict = { 'v_id' : v_id, 'reference_rgb': reference_rgb ,'reference_ani': reference_ani,
+                        'sample_audio': sample_audio, 'target_rgb': target_rgb, 'target_ani': target_ani, 'final_img': final_img}
         # input_dict = { 'id' : v_id, 'reference_rgb': reference_rgb ,'reference_ani': reference_ani,
         #                 'sample_audio': sample_audio, 'target_rgb': target_rgb, 'target_ani': target_ani, 'img' : img}
         return (input_dict)   
     def __len__(self):        
             return len(self.data)
         
-import torchvision
+# import torchvision
+# data = torch.Tensor(100, 1, 24, 24).random_(0, 255)
+# print(data)
 
-import time
-dataset = Voxceleb_mfcc_rgb_single('/home/cxu-serve/p1/lchen63/voxceleb/txt/', 'train')
-data_loader = data.DataLoader(dataset,
-                          batch_size=2,
-                          num_workers=4,
-                          shuffle=True, drop_last=True)  
-t1 = time.time()
-print (len(data_loader))
-for (step, gg)  in enumerate(data_loader):
-    print (time.time() -  t1)
-    print (gg['id'])
-    inputs = [gg['reference_ani'], gg['reference_rgb'], gg['target_ani'], gg['target_rgb']]
-    fake_im = torch.stack(inputs, dim = 1)
-    fake_store = fake_im.data.contiguous().view(4*2,3,256,256)
-    torchvision.utils.save_image(fake_store, 
-        "./tmp/fuck_%05d.png"%step,normalize=True)
+# # Apply threshold
+# data = data > 128
+# data = data.float()
+# print(data)
+
+# # Create fake masks for every image
+# mask = torch.Tensor(100, 1, 24, 24).random_(0, 2)
+# data = data * mask
+# import time
+# dataset = Voxceleb_mfcc_rgb_single('/home/cxu-serve/p1/lchen63/voxceleb/txt/', 'train')
+# data_loader = data.DataLoader(dataset,
+#                           batch_size=1,
+#                           num_workers=4,
+#                           shuffle=False, drop_last=True)  
+# t1 = time.time()
+# print (len(data_loader))
+# for (step, gg)  in enumerate(data_loader):
+#     print (time.time() -  t1)
+#     print  (gg['v_id'])
+#     inputs = [gg['final_img'], gg['reference_rgb'], gg['target_ani'], gg['target_rgb']]
+#     fake_im = torch.stack(inputs, dim = 1)
+#     fake_store = fake_im.data.contiguous().view(4*1,3,256,256)
+#     torchvision.utils.save_image(fake_store, 
+#         "./tmp/vis_%05d.png"%step,normalize=True)
     
-    if step == 10:
-        break
+#     if step == 10:
+#         break
    
 
 
