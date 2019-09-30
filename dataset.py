@@ -435,7 +435,7 @@ class Voxceleb_lmark_rgb_single(data.Dataset):
         real_video  = mmcv.VideoReader(video_path)
         ani_video = mmcv.VideoReader(ani_video_path)
 
-        v_length = lmark.shape[0]
+        v_length = len(ani_video)
 
         
         # we randomly choose a target frame
