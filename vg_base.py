@@ -95,7 +95,7 @@ class Trainer():
             lr=config.lr, betas=(config.beta1, config.beta2))
         self.opt_d = torch.optim.Adam( self.discriminator.parameters(),
             lr=config.lr, betas=(config.beta1, config.beta2))
-        self.dataset = Voxceleb_mfcc_rgb_single(config.dataset_dir, train=config.is_train)
+        self.dataset = Voxceleb_mfcc_rgb_single(config.root, train=config.is_train)
         
         self.data_loader = DataLoader(self.dataset,
                                       batch_size=config.batch_size,
@@ -234,9 +234,9 @@ def parse_args():
                         default=100)
     parser.add_argument("--cuda",
                         default=True)
-    parser.add_argument("--dataset_dir",
+    parser.add_argument("--root",
                         type=str,
-                        default="/home/cxu-serve/p1/lchen63/voxceleb/txt")
+                        default="/home/cxu-serve/p1/lchen63/voxceleb")
                         # default="/mnt/ssd0/dat/lchen63/grid/pickle/")
                         # default = '/media/lele/DATA/lrw/data2/pickle')
     parser.add_argument("--model_dir",

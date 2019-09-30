@@ -259,13 +259,13 @@ class Voxceleb_mfcc_rgb_single(data.Dataset):
         self.train = train
         self.output_shape   = tuple([256, 256])
         self.num_frames = 64  
-        self.root  = '/home/cxu-serve/p1/lchen63/voxceleb/'      
+        self.root  = dataset_dir    
         if self.train =='train':
-            _file = open(os.path.join(dataset_dir, "front_rt2.pkl"), "rb")
+            _file = open(os.path.join(dataset_dir, 'txt', "front_rt2.pkl"), "rb")
             self.data = pickle.load(_file)
             _file.close()
         elif self.train =='test':
-            _file = open(os.path.join(dataset_dir, "front_rt2.pkl"), "rb")
+            _file = open(os.path.join(dataset_dir, 'txt', "front_rt2.pkl"), "rb")
             self.data = pickle.load(_file)
             _file.close()
         print (len(self.data))
