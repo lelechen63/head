@@ -11,8 +11,8 @@ from torch.nn.modules.module import _addindent
 import numpy as np
 from collections import OrderedDict
 import argparse
-from dataset import  Voxceleb_mfcc_rgb_single 
-from ATVG import MFCC_Face_single , VG_base_Discriminator
+from dataset import  Voxceleb_lmark_rgb_single 
+from ATVG import Lmark2rgb_single , Lmark2rgb_single_Discriminator
 from logger import Logger
 
 from torch.nn import init
@@ -55,8 +55,8 @@ def initialize_weights( net, init_type='normal', gain=0.02):
 class Trainer():
     def __init__(self, config):
 
-        self.generator = MFCC_Face_single()
-        self.discriminator = VG_base_Discriminator()
+        self.generator = Lmark2rgb_single()
+        self.discriminator = Lmark2rgb_single_Discriminator()
         self.bce_loss_fn = nn.BCELoss()
         self.l1_loss_fn =  nn.L1Loss()
         self.mse_loss_fn = nn.MSELoss()
@@ -95,7 +95,7 @@ class Trainer():
             lr=config.lr, betas=(config.beta1, config.beta2))
         self.opt_d = torch.optim.Adam( self.discriminator.parameters(),
             lr=config.lr, betas=(config.beta1, config.beta2))
-        self.dataset = Voxceleb_mfcc_rgb_single(config.dataset_dir, train=config.is_train)
+        self.dataset = Voxceleb_lmark_rgb_single(config.dataset_dir, train=config.is_train)
         
         self.data_loader = DataLoader(self.dataset,
                                       batch_size=config.batch_size,
@@ -120,12 +120,12 @@ class Trainer():
                 reference_img = batch_data['final_img']
                 reference_rgb = batch_data['reference_rgb']
                 target_rgb = batch_data['target_rgb']
-                mfcc = batch_data['sample_audio']
+                lmark = batch_data['target_lmark']
                 if config.cuda:
                     reference_img = Variable(reference_img.float()).cuda(device=config.cuda1)
                     reference_rgb = Variable(reference_rgb.float()).cuda(device=config.cuda1)
                     target_rgb    = Variable(target_rgb.float()).cuda(device=config.cuda1)
-                    mfcc = Variable(mfcc.float()).cuda(device=config.cuda1)
+                    lmark = Variable(lmark.float()).cuda(device=config.cuda1)
                 else:
                     raise Exception('no cuda gpu avaliable')
 
@@ -134,12 +134,12 @@ class Trainer():
                     p.requires_grad =  True
                 # print (reference_img.shape)
                 # print (mfcc.shape)
-                fake_im = self.generator( reference_img, mfcc)
-                D_real= self.discriminator(target_rgb, mfcc)
+                fake_im = self.generator( reference_img, lmark)
+                D_real= self.discriminator(target_rgb, lmark)
                 loss_real = self.bce_loss_fn(D_real, self.ones)
 
                 # train with fake image
-                D_fake  = self.discriminator(fake_im.detach(), mfcc)
+                D_fake  = self.discriminator(fake_im.detach(), lmark)
                 loss_fake = self.bce_loss_fn(D_fake, self.zeros)
 
                 loss_disc = loss_real  + loss_fake 
@@ -152,8 +152,8 @@ class Trainer():
                 for p in self.discriminator.parameters():
                     p.requires_grad = False  # to avoid computation
 
-                fake_im  = self.generator( reference_img, mfcc)
-                D_fake = self.discriminator(fake_im, mfcc)
+                fake_im  = self.generator( reference_img, lmark)
+                D_fake = self.discriminator(fake_im, lmark)
 
                 loss_gen = self.bce_loss_fn(D_fake, self.ones)
 
@@ -228,7 +228,7 @@ def parse_args():
                         default=100)
     parser.add_argument("--batch_size",
                         type=int,
-                        default=14)
+                        default=15)
     parser.add_argument("--max_epochs",
                         type=int,
                         default=100)
@@ -251,11 +251,11 @@ def parse_args():
                         # default='/media/lele/DATA/lrw/data2/sample/lstm_gan')
     parser.add_argument("--model_name",
                         type=str,
-                        default="mfcc2rgb_single_base")
+                        default="lmark2rgb_single_base")
                         # default="/mnt/ssd0/dat/lchen63/grid/pickle/")
                         # default = '/media/lele/DATA/lrw/data2/pickle')
-    parser.add_argument('--device_ids', type=str, default='0')
-    parser.add_argument('--num_thread', type=int, default=8)
+    parser.add_argument('--device_ids', type=str, default='0,1')
+    parser.add_argument('--num_thread', type=int, default=4)
     parser.add_argument('--weight_decay', type=float, default=4e-4)
     parser.add_argument('--load_model', action='store_true')
     parser.add_argument('--start_epoch', type=int, default=0, help='start from 0')
@@ -271,7 +271,7 @@ def main(config):
 if __name__ == "__main__":
     config = parse_args()
     config.is_train = 'train'
-    import vg_base as trainer
+    import vg_lmark2img as trainer
     config.model_dir = os.path.join(config.model_dir, config.model_name)
     config.sample_dir = os.path.join(config.sample_dir, config.model_name)
     config.log_dir = os.path.join('./logs', config.model_name)
@@ -281,5 +281,5 @@ if __name__ == "__main__":
     if not os.path.exists(config.sample_dir):
         os.mkdir(config.sample_dir)
 
-    config.cuda1 = torch.device('cuda:{}'.format(config.device_ids))
+    config.cuda1 = torch.device('cuda:{}'.format('0'))
     main(config)

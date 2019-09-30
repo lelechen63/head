@@ -149,7 +149,10 @@ def _apply(layer, activation, normalizer, channel_out=None):
     if normalizer:
         layer.append(normalizer(channel_out))
     if activation:
-        layer.append(activation)
+        if activation == nn.Sigmoid:
+            layer.append(activation())
+        else:    
+            layer.append(activation)
     return layer
 
 def conv2d(channel_in, channel_out,
@@ -576,9 +579,9 @@ class FaceNet(nn.Module):
         return img
     
     
-class FaceNet2(nn.Module):
+class Lmark2rgb_single(nn.Module):
     def __init__(self ):
-        super(FaceNet2,self).__init__()
+        super(Lmark2rgb_single,self).__init__()
         dtype            = torch.FloatTensor
         self.facer_encoder1 = nn.Sequential(
             nn.ReflectionPad2d(3),
@@ -596,12 +599,18 @@ class FaceNet2(nn.Module):
         use_bias = 'False'
         norm_layer = nn.BatchNorm2d
         self.landmark_encoder = nn.Sequential(
-            nn.Linear(136, 128),
+            nn.Linear(204, 128),
             nn.ReLU(True),
             nn.Linear(128, 64),
             nn.ReLU(inplace=True),
             )
-        
+        self.landmark_encoder2 = nn.Sequential(
+            conv2d(64,256, 3,1,1), #4
+            conv2d(256,512,3,1,1), #8
+            )
+        self.bottle =  nn.Sequential(
+            conv2d(1024,512,3,1,1), #4
+            )
         model = []
         for i in range(9):
             model += [ResnetBlock(512, padding_type='zero', norm_layer=norm_layer, use_dropout=True, use_bias=False)]
@@ -663,52 +672,89 @@ class FaceNet2(nn.Module):
             nn.ReLU(True))
             
      
-    def forward(self,lip_base, lmark_base, current_lmark ):
-        face_features1 = []
-        face_features2 = []  
-        lmark_features = []
-        lmark_att = []
-        time_length =  lip_base.shape[1]
-        current_lmark_feature = self.landmark_encoder(current_lmark)
-        for step_t in range(time_length):
-            lmark_t = lmark_base[:,step_t,:]
-            lmark_t.data = lmark_t.data.contiguous()
-            
-            face_t = lip_base[:,step_t,:]
-            face_t.data = face_t.data.contiguous()
-            ff1 = self.facer_encoder1(face_t)
-            face_features1.append(ff1)
-            ff2 = self.facer_encoder2(ff1)
-            face_features2.append(ff2)
-            lmark_feature_t = self.landmark_encoder(lmark_t)
-            lmark_features.append( lmark_feature_t)
-            
-            lmark_att.append(torch.mean(1.0 - self.sigmoid(torch.sqrt(lmark_feature_t - current_lmark_feature)), dim = -1))
-            
-             
-        lmark_att =torch.stack(lmark_att, dim = 1)
-        face_features1 =torch.stack(face_features1, dim = 1)
-        face_features2 =torch.stack(face_features2, dim = 1)
-        lmark_features =torch.stack(lmark_features, dim = 1)
-                
+    def forward(self, reference_img, target_lmark ):
         
-        attend_feature = lmark_att.unsqueeze(-1).unsqueeze(-1).unsqueeze(-1).repeat(1,1,512,4,4) *  face_features2 
-                
-        initial_current = torch.mean(attend_feature, 1)
-        
-        local_feature = self.img_decoder1(initial_current)
-        lmark_total = torch.cat([lmark_features, current_lmark_feature.unsqueeze(1).repeat(1,64,1)], dim = -1)
-        
-        lmark_total = self.lmark_fc(lmark_total)
-        
-        lmark_total = lmark_total.view(lmark_total.shape[0],lmark_total.shape[1], 1, 32,32)
-        global_features1_ave = torch.mean(face_features1 * lmark_total , 1)
-        
-        img_feat = torch.cat([local_feature, global_features1_ave], 1)
-        
-        img = self.img_decoder2(img_feat)
+        ff1 = self.facer_encoder1(reference_img)
+        ff2 = self.facer_encoder2(ff1)
+        target_lmark_feature = self.landmark_encoder(target_lmark)  
+
+        target_lmark_feature = target_lmark_feature.unsqueeze(2).unsqueeze(3).repeat(1,1,4,4)
+
+        target_lmark_feature  = self.landmark_encoder2(target_lmark_feature)
+        img_feat = torch.cat([ff2, target_lmark_feature], 1)
+        img_feat  = self.bottle(img_feat)
+
+        img_feature2 = self.img_decoder1(img_feat)
+
+        img_feature2 = torch.cat([ff1,img_feature2],1)
+
+        img = self.img_decoder2(img_feature2)
+  
         return img    
 
+class Lmark2rgb_single_Discriminator(nn.Module):
+    def __init__(self):
+        super(Lmark2rgb_single_Discriminator, self).__init__()
+
+        self.face_encoder = nn.Sequential(
+            nn.ReflectionPad2d(3),
+            conv2d(3 , 64, 7,1, 0),
+            conv2d(64,64,3,2,1),  #128
+            conv2d(64,128,3,2,1),  #64
+            conv2d(128,128, 3,2,1),  #32
+            conv2d(128,256, 3,2,1),  #16
+            conv2d(256,256, 3,2,1),  #4
+            conv2d(256,512,3,2,1),  #2
+            # conv2d(512,512,3,2,1)  #1
+            )
+        self.landmark_encoder = nn.Sequential(
+            nn.Linear(204, 128),
+            nn.ReLU(True),
+            nn.Linear(128, 64),
+            nn.ReLU(inplace=True),
+            )
+        self.landmark_encoder2 = nn.Sequential(
+            conv2d(64,256, 3,1,1), #4
+            conv2d(256,512,3,1,1), #8
+            )
+        
+        
+        
+        self.decision = nn.Sequential(
+            conv2d(1024,128, 3,1,1),  #4
+            conv2d(128, 1, 4, 1, 0, activation=nn.Sigmoid, normalizer=None)
+            )
+        
+    def forward(self, img  , lmark):
+        
+        lmark_feature= self.landmark_encoder(lmark)
+
+        lmark_feature = lmark_feature.unsqueeze(2).unsqueeze(3).repeat(1,1,4,4)
+
+        lmark_feature  = self.landmark_encoder2(lmark_feature)
+        img_feature = self.face_encoder(img)
+        merge_feature = torch.cat([img_feature, lmark_feature], 1)
+        decision = self.decision(merge_feature)
+        return decision.view(decision.size(0))
+# from torch.autograd import Variable
+
+# import numpy as np
+
+# model = Lmark2rgb_single_Discriminator().cuda()
+# torch.set_printoptions(precision=6)
+
+# a = torch.zeros(2, 136).cuda()
+
+# a = a + 0.0001
+# a = Variable(a)
+
+# # print (a.data)
+# a.shape
+# b = torch.FloatTensor(2, 3, 256, 256).cuda()
+# b = Variable(b)
+
+# g= model(b, a)
+# # print ('================')
 
     
 class MFCC_Face_single(nn.Module):
@@ -854,10 +900,9 @@ class VG_base_Discriminator(nn.Module):
         
         
         self.decision = nn.Sequential(
-            conv2d(1024,128, 3,2,1),  #4
-            nn.Conv2d(128,1,3,2,1), 
-            nn.Sigmoid()
-            )
+        conv2d(1024,128, 3,1,1),  #4
+        conv2d(128, 1, 4, 1, 0, activation=nn.Sigmoid, normalizer=None)
+        )
         
     def forward(self, img , mfcc):
         
@@ -872,7 +917,9 @@ class VG_base_Discriminator(nn.Module):
         merge_feature = torch.cat([img_feature, mfcc_feature], dim = 1)
         decision = self.decision(merge_feature)
         return decision.view(decision.size(0))
-     
+
+
+      
 # from torch.autograd import Variable
 
 # import numpy as np

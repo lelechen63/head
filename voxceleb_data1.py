@@ -25,14 +25,16 @@ import dlib
 import matplotlib.animation as manimation
 
 from torch import multiprocessing
-
+from mpl_toolkits.mplot3d import Axes3D
+import os
+import mmcv
 import time  
 
 def parse_args():
     parser = argparse.ArgumentParser()
 
    
-    parser.add_argument('-i','--in_file', type=str, default='56')
+    parser.add_argument('-i','--in_file', type=str, default='0')
       
     return parser.parse_args()
 config = parse_args()
@@ -40,7 +42,7 @@ config = parse_args()
 
 # root = '/data2/lchen63/voxceleb/'
 root ='/home/cxu-serve/p1/lchen63/voxceleb/'
-# fa = face_alignment.FaceAlignment(face_alignment.LandmarksType._3D, flip_input=False)#,  device='cpu')
+fa = face_alignment.FaceAlignment(face_alignment.LandmarksType._3D, flip_input=False)#,  device='cpu')
 
 
 def get3DLmarks(frame_list, v_path):
@@ -59,7 +61,7 @@ def get3DLmarks(frame_list, v_path):
 
 
 def get_txt(folder):
-    root = '/data2/lchen63/voxceleb/'
+    # root = '/data2/lchen63/voxceleb/'
 
     file_list = []
     txt_f = open( os.path.join(root,'txt', 'v_dev.txt'), 'wb') 
@@ -76,30 +78,30 @@ def get_txt(folder):
     txt_f.close()
     
 def _video2img2lmark(v_path):
-    root = '/data2/lchen63/voxceleb/'
+    # root = '/data2/lchen63/voxceleb/'
 
     count = 0
-    tmp = v_path.split('/')
-    frame_list = []
-    if not os.path.exists(os.path.join(root , 'img') ):
-        os.mkdir(os.path.join(root , 'img'))
-    if not os.path.exists(os.path.join(root , 'img', tmp[-3]) ):
-        os.mkdir(os.path.join(root , 'img', tmp[-3]))
-    if not os.path.exists(os.path.join(root , 'img', tmp[-3], tmp[-2]) ):
-        os.mkdir(os.path.join(root , 'img', tmp[-3], tmp[-2]))
-    if not os.path.exists(os.path.join(root , 'img', tmp[-3], tmp[-2], tmp[-1][:-4]) ):
-        os.mkdir(os.path.join(root , 'img', tmp[-3], tmp[-2], tmp[-1][:-4]))
-
-    cap  =  cv2.VideoCapture(v_path)
-    while(cap.isOpened()):
-        ret, frame = cap.read()
-        if ret == True:            
-#             frame_name = os.path.join(root , 'img', tmp[-3], tmp[-2], tmp[-1][:-4] ,'%05d.png'%count)
-#             cv2.imwrite(frame_name,frame)
-            frame_list.append(frame)
-            count += 1
-        else:
-            break
+    # tmp = v_path.split('/')
+    # frame_list = []
+    # if not os.path.exists(os.path.join(root , 'img') ):
+    #     os.mkdir(os.path.join(root , 'img'))
+    # if not os.path.exists(os.path.join(root , 'img', tmp[-3]) ):
+    #     os.mkdir(os.path.join(root , 'img', tmp[-3]))
+    # if not os.path.exists(os.path.join(root , 'img', tmp[-3], tmp[-2]) ):
+    #     os.mkdir(os.path.join(root , 'img', tmp[-3], tmp[-2]))
+    # if not os.path.exists(os.path.join(root , 'img', tmp[-3], tmp[-2], tmp[-1][:-4]) ):
+    #     os.mkdir(os.path.join(root , 'img', tmp[-3], tmp[-2], tmp[-1][:-4]))
+    frame_list  = mmcv.VideoReader(v_path)
+#     cap  =  cv2.VideoCapture(v_path)
+#     while(cap.isOpened()):
+#         ret, frame = cap.read()
+#         if ret == True:            
+# #             frame_name = os.path.join(root , 'img', tmp[-3], tmp[-2], tmp[-1][:-4] ,'%05d.png'%count)
+# #             cv2.imwrite(frame_name,frame)
+#             frame_list.append(frame)
+#             count += 1
+#         else:
+#             break
     get3DLmarks(frame_list,v_path)
 
     
@@ -110,6 +112,7 @@ def video2img2lmark(list):
     for p in list:
         current = time.time()
         print ('{}/{}'.format(cmt, length))
+        p = os.path.join( root  , p[24:])
         if os.path.exists(p[:-5] + '.npy'):
             if np.load(p[:-5] + '.npy').size != 0:
                 cmt += 1
@@ -123,7 +126,7 @@ def video_transfer(txt):
     txt_f = open(txt, 'rb')
     list = txt_f.readlines()
     print (len(list))
-    batch_size = int(len(list)/20)
+    batch_size = int(len(list)/10)
     i = int(config.in_file)
     video2img2lmark(list[i*batch_size:i*batch_size + batch_size])
        
@@ -134,14 +137,7 @@ def video_transfer(txt):
 
 
 
-######### visualization code
-import numpy as np
-from mpl_toolkits.mplot3d import Axes3D
-import matplotlib.pyplot as plt
-from skimage import io
-import cv2
-import os
-import mmcv
+
 def vis3d():
     v_path = os.path.join(root, 'unzip', 'test_video/id03862/jc6k4sbenMY/00366' + '.mp4' )
     lmark_path = os.path.join(root, 'unzip', 'test_video/id03862/jc6k4sbenMY/00366_prnet' + '.npy' )
@@ -967,7 +963,7 @@ def for_3d_to_rgb(): # based on front_rt.pkl, remove the videos which not contai
 # visualization_lmark()  
 # 
 # vis3d()
-for_3d_to_rgb()
+# for_3d_to_rgb()
 # compute_PCA()
 
 # rotate_3d('/test_video/id03127/Zss2vvY2aLo/00231_sRT.npy', '/test_video/id03127/Zss2vvY2aLo/00231.npy')
@@ -979,6 +975,6 @@ for_3d_to_rgb()
 # video2img2lmark()
 # compute_RT()
 # audio2mfcc('/data2/lchen63/voxceleb/txt/v_test.txt')
-# video_transfer('/data2/lchen63/voxceleb/txt/v_dev.txt')
+video_transfer(os.path.join(root,'txt/v_test.txt'))
 # compose_front()
 # get_train_pair( os.path.join(root, 'txt/v_dev.txt')  )

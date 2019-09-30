@@ -146,17 +146,15 @@ def get(batch = 0 ):
     data = data.load()
     _file.close()
     flage = False
-    for k, item in enumerate(data[2000* batch:2000* (batch + 1)]):
+    for k, item in enumerate(data[5000* batch:5000* (batch + 1)]):
         
-
-
         key_id = item[-1]
         # if  k == 5689:
         #     flage = True
 
         # if flage == False:
         #     continue
-        print ('++++++++++++++++++++++++++++++++%d'%(k + 2000* batch))
+        print ('++++++++++++++++++++++++++++++++%d'%(k + 5000* batch))
         video_path = os.path.join(root, 'unzip', item[0] + '.mp4') 
 
         reference_img_path = video_path[:-4] + '_%05d.png'%key_id
@@ -169,9 +167,9 @@ def get(batch = 0 ):
         lmark_path  = video_path[:-4] +'_front.npy'
 
 
-        # if os.path.exists( video_path[:-4] + '_ani.mp4'):
-        #     print ('=====')
-        #     continue
+        if os.path.exists( video_path[:-4] + '_ani.mp4'):
+            print ('=====')
+            continue
 
         if  not os.path.exists(original_obj_path) or not os.path.exists(reference_prnet_lmark_path) or not os.path.exists(lmark_path) or not os.path.exists(rt_path):
             
@@ -207,7 +205,7 @@ def get(batch = 0 ):
         renderer = setup_renderer()
         # generate animation
 
-        temp_path = './tempo_%05d'%batch
+        temp_path = './tempp_%05d'%batch
 
         # generate animation
         if os.path.exists(temp_path):
@@ -329,4 +327,12 @@ def gg():
         #     break
 # demo()
 # gg()
-get(6)
+import argparse
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--b",
+                        type=int,
+                        default=0)
+    return parser.parse_args()
+config = parse_args()
+get(config.b)

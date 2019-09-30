@@ -393,7 +393,119 @@ class Voxceleb_mfcc_rgb_single(data.Dataset):
         return (input_dict)   
     def __len__(self):        
             return len(self.data)
+
+class Voxceleb_lmark_rgb_single(data.Dataset):
+    def __init__(self, dataset_dir, train='train', cuda = False):
+        self.train = train
+        self.output_shape   = tuple([256, 256])
+        self.num_frames = 64  
+        self.cuda = cuda
+        self.root  = '/home/cxu-serve/p1/lchen63/voxceleb/'      
+        if self.train =='train':
+            _file = open(os.path.join(dataset_dir, "front_rt2.pkl"), "rb")
+            self.data = pickle.load(_file)
+            _file.close()
+        elif self.train =='test':
+            _file = open(os.path.join(dataset_dir, "front_rt2.pkl"), "rb")
+            self.data = pickle.load(_file)
+            _file.close()
+        print (len(self.data))
+        self.transform = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
+        ])
+        # self.lip_region= [48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59]
+    def __getitem__(self, index):
         
+        v_id = self.data[index][0]
+        reference_id = self.data[index][1]
+
+        video_path = os.path.join(self.root, 'unzip', v_id + '.mp4')
+        
+        ani_video_path = os.path.join(self.root, 'unzip', v_id + '_ani.mp4')
+
+
+        lmark_path = os.path.join(self.root, 'unzip', v_id + '.npy')
+
+
+        lmark = np.load(lmark_path)
+
+
+
+        real_video  = mmcv.VideoReader(video_path)
+        ani_video = mmcv.VideoReader(ani_video_path)
+
+        v_length = lmark.shape[0]
+
+        
+        # we randomly choose a target frame
+        while True:
+            target_id =  np.random.choice([0, v_length - 1])
+            if target_id != reference_id:
+                break
+        
+        target_rgb = real_video[target_id]
+
+        reference_rgb = real_video[reference_id]
+
+        reference_ani = ani_video[reference_id]
+
+        target_ani = ani_video[target_id]
+        
+        target_rgb = mmcv.bgr2rgb(target_rgb)
+        # target_rgb = cv2.cvtColor(target_rgb, cv2.COLOR_BGR2RGB)
+        target_rgb = cv2.resize(target_rgb, self.output_shape)
+        target_rgb = self.transform(target_rgb)
+        if self.cuda:
+            target_rgb = target_rgb.cuda()
+
+        target_ani = mmcv.bgr2rgb(target_ani)
+        target_ani = cv2.resize(target_ani, self.output_shape)
+        # target_ani =  target_ani * mask
+        target_ani = self.transform(target_ani)
+        if self.cuda:
+            target_ani = target_ani.cuda()
+        mask = target_ani[0].clone()
+        
+        mask = mask >  -0.9
+        mask = mask.type(torch.FloatTensor)
+        if self.cuda:
+            mask = mask.cuda()
+        
+
+
+        reference_rgb = mmcv.bgr2rgb(reference_rgb)
+        # reference_rgb = cv2.cvtColor(reference_rgb, cv2.COLOR_BGR2RGB)
+        reference_rgb = cv2.resize(reference_rgb, self.output_shape)
+        reference_rgb = self.transform(reference_rgb)
+        if self.cuda:
+            reference_rgb = reference_rgb.cuda()
+        
+        reference_ani = mmcv.bgr2rgb(reference_ani)
+        # reference_ani = cv2.cvtColor(reference_ani, cv2.COLOR_BGR2RGB)
+        reference_ani = cv2.resize(reference_ani, self.output_shape)
+        reference_ani = self.transform(reference_ani)
+
+
+
+        target_lmark  =torch.FloatTensor(lmark[target_id]).view(-1)
+        if self.cuda:
+            target_lmark = target_lmark.cuda()
+        
+     
+        
+        final_img = reference_rgb * torch.abs(1 - mask) + (target_ani) * mask
+        if self.cuda:
+            final_img = final_img.cuda()
+       
+        ### we will not write mismatch in this version.
+        input_dict = { 'v_id' : v_id, 'reference_rgb': reference_rgb ,'reference_ani': reference_ani,
+                        'target_lmark': target_lmark, 'target_rgb': target_rgb, 'target_ani': target_ani, 'final_img': final_img}
+        # input_dict = { 'id' : v_id, 'reference_rgb': reference_rgb ,'reference_ani': reference_ani,
+        #                 'sample_audio': sample_audio, 'target_rgb': target_rgb, 'target_ani': target_ani, 'img' : img}
+        return (input_dict)   
+    def __len__(self):        
+            return len(self.data)        
 # import torchvision
 # data = torch.Tensor(100, 1, 24, 24).random_(0, 255)
 # print(data)
