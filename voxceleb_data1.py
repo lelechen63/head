@@ -40,8 +40,8 @@ def parse_args():
 config = parse_args()
 
 
-# root = '/data2/lchen63/voxceleb/'
-root ='/home/cxu-serve/p1/lchen63/voxceleb/'
+root = '/data2/lchen63/voxceleb/'
+# root ='/home/cxu-serve/p1/lchen63/voxceleb/'
 fa = face_alignment.FaceAlignment(face_alignment.LandmarksType._3D, flip_input=False)#,  device='cpu')
 
 
@@ -963,7 +963,7 @@ def for_3d_to_rgb(): # based on front_rt.pkl, remove the videos which not contai
 # visualization_lmark()  
 # 
 # vis3d()
-# for_3d_to_rgb()
+for_3d_to_rgb()
 # compute_PCA()
 
 # rotate_3d('/test_video/id03127/Zss2vvY2aLo/00231_sRT.npy', '/test_video/id03127/Zss2vvY2aLo/00231.npy')
@@ -975,6 +975,6 @@ def for_3d_to_rgb(): # based on front_rt.pkl, remove the videos which not contai
 # video2img2lmark()
 # compute_RT()
 # audio2mfcc('/data2/lchen63/voxceleb/txt/v_test.txt')
-video_transfer(os.path.join(root,'txt/v_test.txt'))
+# video_transfer(os.path.join(root,'txt/v_test.txt'))
 # compose_front()
 # get_train_pair( os.path.join(root, 'txt/v_dev.txt')  )
