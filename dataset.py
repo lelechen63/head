@@ -416,7 +416,7 @@ class Voxceleb_lmark_rgb_single(data.Dataset):
         ])
         # self.lip_region= [48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59]
     def __getitem__(self, index):
-        
+        try:
             v_id = self.data[index][0]
             reference_id = self.data[index][1]
 
@@ -504,7 +504,8 @@ class Voxceleb_lmark_rgb_single(data.Dataset):
             # input_dict = { 'id' : v_id, 'reference_rgb': reference_rgb ,'reference_ani': reference_ani,
             #                 'sample_audio': sample_audio, 'target_rgb': target_rgb, 'target_ani': target_ani, 'img' : img}
             return (input_dict)   
-        
+        except:
+            print (reference_id , len(ani_video), len(real_video), video_path)
     def __len__(self):        
             return len(self.data)        
 # import torchvision
