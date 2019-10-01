@@ -505,7 +505,7 @@ class Voxceleb_lmark_rgb_single(data.Dataset):
             #                 'sample_audio': sample_audio, 'target_rgb': target_rgb, 'target_ani': target_ani, 'img' : img}
             return (input_dict)   
         except:
-            self.__getitem__((index+1)%(len(self.data))
+            self.__getitem__((index+1)%(len(self.data)))
     def __len__(self):        
             return len(self.data)        
 # import torchvision
