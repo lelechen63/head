@@ -35,6 +35,8 @@ def parse_args():
 
    
     parser.add_argument('-i','--in_file', type=str, default='0')
+
+    parser.add_argument('-t','--txt_start', type=int, default=0)
       
     return parser.parse_args()
 config = parse_args()
@@ -948,14 +950,45 @@ def for_3d_to_rgb(): # based on front_rt.pkl, remove the videos which not contai
     new_data = []
 
     for line in data:
-        print(line)
+        # print(line)
         
         ani_video_path = os.path.join(root, 'unzip', line[0] + '_ani.mp4')
         if os.path.exists(ani_video_path):
+            ani_video = mmcv.VideoReader(ani_video_path)
+            real_video = mmcv.VideoReader(os.path.join(root, 'unzip', line[0] + '.mp4'))
+            ani_length = len(ani_video)
+            real_length = len(real_video)
+            reference_id = line[1]
+            if ani_length != real_length:
+                print (ani_video_path, ani_length, real_length)
+                continue
+            if reference_id >= ani_length:
+                print (ani_video_path, reference_id, real_length)
+                continue
             new_data.append(line)
     print (len(new_data))
     with open(os.path.join(root, 'txt','front_rt2.pkl'), 'wb') as handle:
         pickle.dump(new_data, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+def file2folder(txt):
+    txt_r = open(txt, 'rb')
+    txt_f = open( os.path.join(root,'txt', 'copy_%03d.txt'%config.txt_start), 'wb') 
+    list = txt_r.readlines()
+    length = len(list)
+    dir_set = set()
+    new_list = list[7000 + 3000* config.txt_start:10000 + 3000* config.txt_start ]
+    for line in new_list:
+        line = line[:-1]
+        folder_name = os.path.dirname(line)
+        dir_set.add(folder_name)
+    print (dir_set)
+    for line in dir_set:
+        txt_f.writelines(line)
+        txt_f.write('\n')
+    txt_f.close()
+    # print (len(dir_set))
+        
+
 
 # def rotate_3d (rt, obj):
 
@@ -963,7 +996,7 @@ def for_3d_to_rgb(): # based on front_rt.pkl, remove the videos which not contai
 # visualization_lmark()  
 # 
 # vis3d()
-for_3d_to_rgb()
+# for_3d_to_rgb()
 # compute_PCA()
 
 # rotate_3d('/test_video/id03127/Zss2vvY2aLo/00231_sRT.npy', '/test_video/id03127/Zss2vvY2aLo/00231.npy')
@@ -978,3 +1011,4 @@ for_3d_to_rgb()
 # video_transfer(os.path.join(root,'txt/v_test.txt'))
 # compose_front()
 # get_train_pair( os.path.join(root, 'txt/v_dev.txt')  )
+file2folder(os.path.join(root, 'txt/v_dev.txt') )
