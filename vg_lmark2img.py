@@ -88,7 +88,6 @@ class Trainer():
         if config.load_model:
             self.start_epoch = config.start_epoch
             self.load(config.pretrained_dir, config.pretrained_epoch)
-        print ('-----------')
        
 
         self.opt_g = torch.optim.Adam( self.generator.parameters(),
