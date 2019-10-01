@@ -23,7 +23,7 @@ from util import utils
 from tqdm import tqdm
 import dlib
 import matplotlib.animation as manimation
-
+from zipfile import ZipFile
 from torch import multiprocessing
 from mpl_toolkits.mplot3d import Axes3D
 import os
