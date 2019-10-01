@@ -40,8 +40,8 @@ def parse_args():
     return parser.parse_args()
 config = parse_args()
 
-# root = '/data2/lchen63/voxceleb/'
-root ='/home/cxu-serve/p1/lchen63/voxceleb/'
+root = '/data2/lchen63/voxceleb/'
+# root ='/home/cxu-serve/p1/lchen63/voxceleb/'
 fa = face_alignment.FaceAlignment(face_alignment.LandmarksType._3D, flip_input=False)#,  device='cpu')
 
 
@@ -937,7 +937,7 @@ def compose_front():
 
 
 def for_3d_to_rgb(): # based on front_rt.pkl, remove the videos which not contain ani video
-    _pickle_file = os.path.join(root, 'txt','front_rt.pkl')
+    _pickle_file = os.path.join(root, 'txt','front_rt2.pkl')
     _file = open(_pickle_file, "rb")
     data = pickle.load(_file)
 
@@ -961,7 +961,7 @@ def for_3d_to_rgb(): # based on front_rt.pkl, remove the videos which not contai
                 continue
             new_data.append(line)
     print (len(new_data))
-    with open(os.path.join(root, 'txt','front_rt2.pkl'), 'wb') as handle:
+    with open(os.path.join(root, 'txt','front_rt3.pkl'), 'wb') as handle:
         pickle.dump(new_data, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 def file2folder(txt):
