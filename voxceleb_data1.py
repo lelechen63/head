@@ -986,7 +986,7 @@ def file2folder(txt):
         for r,directories, files in os.walk(dir_t):
             for filename in files:
                 file_list.append(os.path.join(r, filename))
-    with ZipFile( os.path.join(root,'txt', 'zip_%03d.zip'%config.txt_start), 'w') as zip:
+    with ZipFile( os.path.join(root,'txt', 'zip_%03d.zip'%config.txt_start), 'w', allowZip64=True) as zip:
         for file in file_list:
             zip.write(file)
 
