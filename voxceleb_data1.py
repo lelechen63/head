@@ -983,9 +983,9 @@ def file2folder(txt):
     print (dir_set)
     file_list = []
     for dir_t in dir_set:
-        for root,directories, files in os.walk(dir_t):
+        for r,directories, files in os.walk(dir_t):
             for filename in files:
-                file_list.append(os.path.join(root, filename))
+                file_list.append(os.path.join(r, filename))
     with ZipFile( os.path.join(root,'txt', 'zip_%03d.zip'%config.txt_start, 'w')) as zip:
         for file in file_list:
             zip.write(file)
