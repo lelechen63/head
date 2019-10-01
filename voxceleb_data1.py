@@ -40,8 +40,8 @@ def parse_args():
     return parser.parse_args()
 config = parse_args()
 
-root = '/data2/lchen63/voxceleb/'
-# root ='/home/cxu-serve/p1/lchen63/voxceleb/'
+# root = '/data2/lchen63/voxceleb/'
+root ='/home/cxu-serve/p1/lchen63/voxceleb/'
 fa = face_alignment.FaceAlignment(face_alignment.LandmarksType._3D, flip_input=False)#,  device='cpu')
 
 
@@ -61,17 +61,15 @@ def get3DLmarks(frame_list, v_path):
 
 
 def get_txt(folder):
-    # root = '/data2/lchen63/voxceleb/'
-
     file_list = []
     txt_f = open( os.path.join(root,'txt', 'v_dev.txt'), 'wb') 
-    for root, dirnames, filenames in os.walk(folder):
+    for r, dirnames, filenames in os.walk(folder):
         for filename in filenames:
             if filename.endswith(('.mpg', '.mov', '.mp4')):
-                filepath = os.path.join(root, filename)
+                filepath = os.path.join(r, filename)
 #                 print (filepath, filename)
                 file_list.append(filepath)
-    print (file_list[:10])
+    # print (file_list[:10])
     for line in file_list:
         txt_f.writelines(line)
         txt_f.write('\n')
@@ -133,7 +131,6 @@ def video_transfer(txt):
         
         
         
-# get_txt('/data2/lchen63/voxceleb/unzip/dev_video')
 
 
 
@@ -188,7 +185,6 @@ import os
 import numpy as np
 # print ('++++')
 def get_new_txt(txt):
-    root = '/data2/lchen63/voxceleb/'
 
     file_list = []
     txt_w = open( os.path.join(root,'txt', 'fv_dev.txt'), 'wb') 
@@ -214,9 +210,6 @@ def get_new_txt(txt):
     
 # get_new_txt('/data2/lchen63/voxceleb/txt/v_dev.txt')
 
-import os
-import numpy as np
-import pickle
 
 
 def get_train_pair(txt):
@@ -265,7 +258,7 @@ def get_train_pair(txt):
             txt_w.writelines(line + ':' + str(finished[line]))
     txt_f.close()
     print (kk[:2])
-    with open(os.path.join( root, 'txt','train.pkl'), 'wb') as handle:
+    with open(os.path.join( root, 'txt','train2.pkl'), 'wb') as handle:
         pickle.dump(kk, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
     
@@ -316,15 +309,18 @@ def compute_RT():
     landmarks = []
     RT_list = []
     source = np.zeros((len(consider_key),3))
-    ff = np.load( os.path.join(root, 'unzip', 'dev_video/id02343/08TabUdunsU/00001.npy'))[30]
+    ff = np.load('./basics/00001.npy')[30]
+    # ff = np.load( os.path.join(root, 'unzip', 'dev_video/id02343/08TabUdunsU/00001.npy'))[30]
     for m in range(len(consider_key)):
         source[m] = ff[consider_key[m]]
         
     source = mat(source)
     for index in range(len(train_data)):
         print ('{}/{}'.format(index,len(train_data) ))
-        print ( train_data[index][0])
-
+        if not os.path.exists(os.path.join( root, 'unzip', train_data[index][0])):
+            print (os.path.join( root, 'unzip', train_data[index][0]))
+            continue
+        # break
         for i in range(len(train_data[index][2])):
             lmark_path = os.path.join( root, 'unzip', train_data[index][0], train_data[index][2][i] + '.npy' )
             srt_path = os.path.join(root, 'unzip', train_data[index][0], train_data[index][2][i] + '_sRT.npy')
@@ -454,7 +450,7 @@ def rigid_transform_3D(A, B):
 #     plt.show()
 def clean_by_RT():
     n = 68
-    _file = open(os.path.join( root , "txt/", "trian2.pkl"), "rb")
+    _file = open(os.path.join( root , "txt/", "train2.pkl"), "rb")
     data = pickle.load(_file)
     _file.close()
     k = len(data)
@@ -865,7 +861,7 @@ def compose_lmark_face_dataset():
         
 def compose_front():
     n = 68
-    _file = open(os.path.join(root, 'txt' ,  "test_clean.pkl"), "rb")
+    _file = open(os.path.join(root, 'txt' ,  "train2_clean.pkl"), "rb")
     data = pickle.load(_file)
     new_data = []
     # data= [['test_video/id03127/Zss2vvY2aLo',1254, ['00231']]]
@@ -936,7 +932,7 @@ def compose_front():
 
     print (new_data[0])
     print (len(new_data))
-    with open(os.path.join(root, 'txt','front_rt.pkl'), 'wb') as handle:
+    with open(os.path.join(root, 'txt','front_rt_train.pkl'), 'wb') as handle:
         pickle.dump(new_data, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 
@@ -989,7 +985,15 @@ def file2folder(txt):
     with ZipFile( os.path.join(root,'txt', 'zip_%03d.zip'%config.txt_start), 'w', allowZip64=True) as zip:
         for file in file_list:
             zip.write(file)
-
+def folder2zip(folder):
+    
+    file_list = []
+    for r,directories, files in os.walk(folder):
+        for filename in files:
+            file_list.append(os.path.join(r, filename))
+    with ZipFile( os.path.join(root,'txt', 'zip_test.zip'), 'w', allowZip64=True) as zip:
+        for file in file_list:
+            zip.write(file)
     # for line in dir_set:
     #     txt_f.writelines(line)
     #     txt_f.write('\n')
@@ -1014,9 +1018,20 @@ def file2folder(txt):
 # compose_lmark_face_dataset()
 # clean_by_RT()
 # video2img2lmark()
-# compute_RT()
+
 # audio2mfcc('/data2/lchen63/voxceleb/txt/v_test.txt')
 # video_transfer(os.path.join(root,'txt/v_test.txt'))
 # compose_front()
+
+# file2folder(os.path.join(root, 'txt/v_dev.txt') )
+# get_txt(os.path.join(root, 'unzip/dev_video'))
+# get_new_txt(os.path.join(root, 'txt/v_dev.txt'))
 # get_train_pair( os.path.join(root, 'txt/v_dev.txt')  )
-file2folder(os.path.join(root, 'txt/v_dev.txt') )
+# compute_RT()
+
+
+#####################
+# clean_by_RT()
+compose_front()
+
+# folder2zip('/home/cxu-serve/p1/lchen63/voxceleb/unzip/test_video')
