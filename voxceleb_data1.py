@@ -37,13 +37,14 @@ def parse_args():
     parser.add_argument('-i','--in_file', type=str, default='0')
 
     parser.add_argument('-t','--txt_start', type=int, default=0)
-      
+    parser.add_argument('-r','--root', type=int, default=0)
     return parser.parse_args()
 config = parse_args()
 
-
-root = '/data2/lchen63/voxceleb/'
-# root ='/home/cxu-serve/p1/lchen63/voxceleb/'
+if config.root == 0:
+    root = '/data2/lchen63/voxceleb/'
+else:
+    root ='/home/cxu-serve/p1/lchen63/voxceleb/'
 fa = face_alignment.FaceAlignment(face_alignment.LandmarksType._3D, flip_input=False)#,  device='cpu')
 
 
@@ -976,16 +977,26 @@ def file2folder(txt):
     list = txt_r.readlines()
     length = len(list)
     dir_set = set()
-    new_list = list[7000 + 3000* config.txt_start:10000 + 3000* config.txt_start ]
+    new_list = list[7000 + 1000* config.txt_start:10000 + 1000* config.txt_start ]
     for line in new_list:
         line = line[:-1]
         folder_name = os.path.dirname(line)
+        folder_name = os.path.dirname(folder_name)
         dir_set.add(folder_name)
     print (dir_set)
-    for line in dir_set:
-        txt_f.writelines(line)
-        txt_f.write('\n')
-    txt_f.close()
+    file_list = []
+    for dir_t in dir_set:
+        for root,directories, files in os.walk(dir_t):
+            for filename in files:
+                file_list.append(os.path.join(root, filename))
+    with ZipFile( os.path.join(root,'txt', 'zip_%03d.zip'%config.txt_start, 'w')) as zip:
+        for file in file_list:
+            zip.write(file)
+
+    # for line in dir_set:
+    #     txt_f.writelines(line)
+    #     txt_f.write('\n')
+    # txt_f.close()
     # print (len(dir_set))
         
 
