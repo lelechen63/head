@@ -974,7 +974,7 @@ def file2folder(txt):
     list = txt_r.readlines()
     length = len(list)
     dir_set = set()
-    new_list = list[10000 + 10000* config.txt_start:10000 + 10000* (config.txt_start +1 ) ]
+    new_list = list[20000 : 200000]
     for line in new_list:
         line = line[:-1]
         folder_name = os.path.dirname(line)
