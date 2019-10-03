@@ -66,6 +66,7 @@ class Lmark2rgbDataset(Dataset):
         return len(self.data)   
 
     def __getitem__(self, index):
+        print ('+++++++++++++++++++++++++++')
         v_id = self.data[index][0]
         reference_id = self.data[index][1]
 
@@ -144,6 +145,7 @@ class Lmark2rgbDataset(Dataset):
         input_dic = {'v_id' : v_id, 'target_lmark': target_lmark, 'reference_frames': reference_frames,
         'target_rgb': target_rgb, 'target_ani': target_ani
         }
+        print ('+++++++++++++++++++++++++++')
         return input_dic
 
 
