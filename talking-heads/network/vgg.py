@@ -3,8 +3,8 @@ import torch.nn as nn
 from collections import OrderedDict
 from torchvision.models import vgg
 import os
-
-root = "/home/cxu-serve/p1/lchen63/voxceleb"
+root = "/data2/lchen63/voxceleb"
+# root = "/home/cxu-serve/p1/lchen63/voxceleb"
 class VGG_Activations(nn.Module):
     """
     This class allows us to execute only a part of a given VGG network and obtain the activations for the specified
