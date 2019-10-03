@@ -90,6 +90,7 @@ class Lmark2rgbDataset(Dataset):
 
         # we randomly choose a target frame 
         while True:
+            print ('**************')
             target_id =  np.random.choice([0, v_length - 1])
             if target_id != reference_id and target_id not in input_indexs:
                 break
