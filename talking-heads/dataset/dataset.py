@@ -11,7 +11,12 @@ from multiprocessing import Pool
 
 import PIL
 import cv2
+import matplotlib
+
+matplotlib.use('pdf')
 import matplotlib.pyplot as plt
+
+
 import numpy as np
 from torch.utils.data import Dataset
 import torch
