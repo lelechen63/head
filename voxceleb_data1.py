@@ -964,7 +964,7 @@ def file2folder(txt):
     list = txt_r.readlines()
     length = len(list)
     dir_set = set()
-    new_list = list[0 : 2]
+    new_list = list[200000 : 300000]
     for line in new_list:
         line = line[:-1]
         folder_name = os.path.dirname(line)
@@ -974,7 +974,8 @@ def file2folder(txt):
     file_list = []
     for dir_t in dir_set:
         command_line = 'rsync -a ' + dir_t + ' ' + '/mnt/Data/lchen63/vox' 
-        print (command_line)
+        # print (command_line)
+        os.system(command_line)
     #     for r,directories, files in os.walk(dir_t):
     #         for filename in files:
     #             file_list.append(os.path.join(r, filename))
