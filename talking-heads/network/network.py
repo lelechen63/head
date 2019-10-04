@@ -292,8 +292,10 @@ class Lmark2img_Discriminator(nn.Module):
         self.conv5 = ResidualBlockDown(512, 512)
         self.conv6 = ResidualBlockDown(512, 512)
         self.res_block = ResidualBlock(512)
-        self.last_conv = nn.Conv2d(512, 1, kernel_size=4, stride=1)
+        self.last_fc = nn.Conv2d(512, 128, kernel_size=4, stride=1)
         self.pooling = nn.AdaptiveMaxPool2d((1, 1))
+
+        self.linear = nn.Linear(512, 1)
 
         self.apply(weights_init)
     
@@ -316,11 +318,9 @@ class Lmark2img_Discriminator(nn.Module):
         out_6 = (self.conv6(out_5))  # [B, 512, 4, 4]
         out_7 = (self.res_block(out_6))
         
-       
-        out = self.last_conv(out_7) 
-        # out = torch.sigmoid(out)
-        
-        out = out.reshape(x.shape[0])
+       out = F.relu(self.pooling(out_7)).view(-1, 512)  # [B, 512]
+
+       out = self.linear(out)
 
         return out  #, [out_0, out_1, out_2, out_3, out_4, out_5, out_6, out_7]
 

@@ -44,8 +44,8 @@ class Trainer():
 
 
         self.config = config
-        self.ones = Variable(torch.ones(config.batch_size), requires_grad=False)
-        self.zeros = Variable(torch.zeros(config.batch_size), requires_grad=False)
+        self.ones = Variable(torch.ones(config.batch_size, 1), requires_grad=False)
+        self.zeros = Variable(torch.zeros(config.batch_size,1 ), requires_grad=False)
 
         if config.cuda:
             device_ids = [int(i) for i in config.device_ids.split(',')]
@@ -145,7 +145,7 @@ class Trainer():
                 self.opt_g.zero_grad()
                 D_fake = self.discriminator(fake_img, target_lmark)
 
-                loss_adv = self.bce_loss_fn(D_fake, self.ones)
+                loss_adv = self.mse_loss_fn(D_fake, self.ones)
                 loss_cnt = self.loss_cnt(target_rgb, fake_img)
 
                 loss_pix = self.l1_loss_fn(fake_img, target_rgb)
@@ -166,16 +166,16 @@ class Trainer():
 
                 # train with real image
                 D_real= self.discriminator(target_rgb, target_lmark)
-                loss_real = self.bce_loss_fn(D_real, self.ones)
+                loss_real = self.mse_loss_fn(D_real, self.ones)
 
                 # train with fake image
                 D_fake  = self.discriminator(fake_img.detach(), target_lmark)
-                loss_fake = self.bce_loss_fn(D_fake, self.zeros)
+                loss_fake = self.mse_loss_fn(D_fake, self.zeros)
 
 
                 # train with ani image
                 D_ani  = self.discriminator(target_ani,  target_lmark)
-                loss_ani = self.bce_loss_fn(D_ani, self.zeros)
+                loss_ani = self.mse_loss_fn(D_ani, self.zeros)
 
                 loss_disc = loss_real  +  loss_fake + loss_ani
 
