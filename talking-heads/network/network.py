@@ -318,7 +318,7 @@ class Lmark2img_Discriminator(nn.Module):
         
        
         out = self.last_conv(out_7) 
-        out = torch.sigmoid(out)
+        # out = torch.sigmoid(out)
         
         out = out.reshape(x.shape[0])
 

@@ -38,7 +38,7 @@ class Trainer():
         self.embedder = Embedder()
 
 
-        self.bce_loss_fn = nn.BCELoss()
+        self.bce_loss_fn = nn.BCEWithLogitsLoss()
         self.l1_loss_fn =  nn.L1Loss()
         self.mse_loss_fn = nn.MSELoss()
 
