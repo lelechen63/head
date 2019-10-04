@@ -101,7 +101,7 @@ class Lmark2rgbDataset(Dataset):
             rgb_t =  mmcv.bgr2rgb(real_video[t]) 
             lmark_t = lmark[t]
             lmark_rgb = plot_landmarks( lmark_t)
-            lmark_rgb = np.array(lmark_rgb) 
+            # lmark_rgb = np.array(lmark_rgb) 
 
             # resize 224 to 256
             rgb_t  = cv2.resize(rgb_t, self.output_shape)
@@ -139,7 +139,7 @@ class Lmark2rgbDataset(Dataset):
         # reference_ani = self.transform(reference_ani)
 
         target_lmark = plot_landmarks(target_lmark)
-        target_lmark = np.array(target_lmark) 
+        # target_lmark = np.array(target_lmark) 
         target_lmark  = cv2.resize(target_lmark, self.output_shape)
         target_lmark  = cv2.resize(target_lmark, self.output_shape)
         target_lmark = self.transform(target_lmark)
@@ -152,7 +152,7 @@ class Lmark2rgbDataset(Dataset):
         return input_dic
 
 
-def plot_landmarks( landmarks):
+def plot_landmarks1( landmarks):
     """
     Creates an RGB image with the landmarks. The generated image will be of the same size as the frame where the face
     matching the landmarks.
@@ -196,7 +196,61 @@ def plot_landmarks( landmarks):
     plt.close(fig)
     return data
 
-# # endregion
+
+def plot_landmarks( landmarks):
+    # landmarks = np.int32(landmarks)
+    """
+    Creates an RGB image with the landmarks. The generated image will be of the same size as the frame where the face
+    matching the landmarks.
+
+    The image is created by plotting the coordinates of the landmarks using matplotlib, and then converting the
+    plot to an image.
+
+    Things to watch out for:
+    * The figure where the landmarks will be plotted must have the same size as the image to create, but matplotlib
+    only accepts the size in inches, so it must be converted to pixels using the DPI of the screen.
+    * A white background is printed on the image (an array of ones) in order to keep the figure from being flipped.
+    * The axis must be turned off and the subplot must be adjusted to remove the space where the axis would normally be.
+
+    :param frame: Image with a face matching the landmarks.
+    :param landmarks: Landmarks of the provided frame,
+    :return: RGB image with the landmarks as a Pillow Image.
+    """
+    # print (landmarks[0:17].shape)
+    # print(type(landmarks))
+
+    # points = np.array([[1, 4], [5, 6], [7, 8], [4, 4]])
+    # print (points.shape)
+
+
+    blank_image = np.zeros((224,224,3), np.uint8)
+
+    # cv2.polylines(blank_image, np.int32([points]), True, (0,255,255), 1)
+
+    cv2.polylines(blank_image, np.int32([landmarks[0:17]]) , True, (0,255,255), 1)
+ 
+    cv2.polylines(blank_image,  np.int32([landmarks[17:22]]), True, (255,0,255), 1)
+
+    cv2.polylines(blank_image, np.int32([landmarks[22:27]]) , True, (255,0,255), 1)
+
+    cv2.polylines(blank_image, np.int32([landmarks[27:31]]) , True, (255,255, 0), 1)
+
+    cv2.polylines(blank_image, np.int32([landmarks[31:36]]) , True, (255,255, 0), 1)
+
+    cv2.polylines(blank_image, np.int32([landmarks[36:42]]) , True, (255,0, 0), 1)
+    cv2.polylines(blank_image, np.int32([landmarks[42:48]]) , True, (255,0, 0), 1)
+
+    cv2.polylines(blank_image, np.int32([landmarks[48:60]]) , True, (0, 0, 255), 1)
+
+
+
+
+
+    return blank_image
+
+
+
+
 # import torchvision
 
 
@@ -219,5 +273,5 @@ def plot_landmarks( landmarks):
 #         "./tmp/vis_%05d.png"%step,normalize=True)
     
 #     if step == 10:
-        # break
+#         break
    
