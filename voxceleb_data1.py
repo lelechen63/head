@@ -973,7 +973,8 @@ def file2folder(txt):
     print (dir_set)
     file_list = []
     for dir_t in dir_set:
-        command_line = 'rsync '
+        command_line = 'rsync -a ' + dir_t + ' ' + '/mnt/Data/lchen63/vox' 
+        print (command_line)
     #     for r,directories, files in os.walk(dir_t):
     #         for filename in files:
     #             file_list.append(os.path.join(r, filename))
