@@ -266,7 +266,6 @@ class Discriminator(nn.Module):
         out_6 = (self.conv6(out_5))  # [B, 512, 4, 4]
         out_7 = (self.res_block(out_6))
 
-        # Vectorize
         out = F.relu(self.pooling(out_7)).view(-1, 512, 1)  # [B, 512, 1]
 
         # Calculate Realism Score
@@ -318,9 +317,9 @@ class Lmark2img_Discriminator(nn.Module):
         out_6 = (self.conv6(out_5))  # [B, 512, 4, 4]
         out_7 = (self.res_block(out_6))
         
-       out = F.relu(self.pooling(out_7)).view(-1, 512)  # [B, 512]
+        out = F.relu(self.pooling(out_7)).view(-1, 512)  # [B, 512]
 
-       out = self.linear(out)
+        out = self.linear(out)
 
         return out  #, [out_0, out_1, out_2, out_3, out_4, out_5, out_6, out_7]
 
