@@ -90,7 +90,7 @@ class Lmark2rgbDataset(Dataset):
         ani_video = mmcv.VideoReader(ani_video_path)
 
         # sample frames for embedding network
-        input_indexs  = set(random.sample(range(0,64), 8))
+        input_indexs  = set(random.sample(range(0,64), 1))
 
         # we randomly choose a target frame 
         target_id =  np.random.choice([0, v_length - 1])
@@ -264,7 +264,15 @@ def plot_landmarks( landmarks):
 #     print (time.time() -  t1)
 #     print  (gg['v_id'])
 #     print (gg['reference_frames'].shape)
-#     inputs = [gg['target_rgb'], gg['target_ani'], gg['target_lmark'], gg['target_rgb']]
+#     # 'v_id' : v_id, 'target_lmark': target_lmark, 'reference_frames': reference_frames,
+#     #     'target_rgb': target_rgb, 'target_ani': target_ani
+
+
+
+#     print (gg['reference_frames'].shape)
+#     print (gg['target_lmark'].shape)
+#     print (gg['reference_frames'][:,0,0].shape)
+#     inputs = [gg['target_lmark'], gg['target_rgb'], gg['target_ani'], gg['reference_frames'][:,0,0]]
 #     fake_im = torch.stack(inputs, dim = 1)
 #     fake_store = fake_im.data.contiguous().view(4*1,3,256,256)
 #     torchvision.utils.save_image(fake_store, 

@@ -25,7 +25,7 @@ class Embedder(nn.Module):
     The Embedder network attempts to generate a vector that encodes the personal characteristics of an individual given
     a head-shot and the matching landmarks.
     """
-    def __init__(self, gpu=None):
+    def __init__(self):
         super(Embedder, self).__init__()
 
         self.conv1 = ResidualBlockDown(6, 64)
@@ -39,17 +39,11 @@ class Embedder(nn.Module):
         self.pooling = nn.AdaptiveMaxPool2d((1, 1))
 
         self.apply(weights_init)
-        self.gpu = gpu
-        if gpu is not None:
-            self.cuda(gpu)
+       
 
     def forward(self, x, y):   #(x: img, y: lmark)
         assert x.dim() == 4 and x.shape[1] == 3, "Both x and y must be tensors with shape [BxK, 3, W, H]."
         assert x.shape == y.shape, "Both x and y must be tensors with shape [BxK, 3, W, H]."
-        if self.gpu is not None:
-            x = x.cuda(self.gpu)
-            y = y.cuda(self.gpu)
-
         # Concatenate x & y
         out = torch.cat((x, y), dim=1)  # [BxK, 6, 256, 256]
 
@@ -157,8 +151,10 @@ class  Lmark2img_Generator(nn.Module):
         self.deconv2 = AdaptiveResidualBlockUp(128, 64, upsample=2)
         self.in2_d = nn.InstanceNorm2d(64, affine=True)
 
-        self.deconv1 = AdaptiveResidualBlockUp(64, 3, upsample=2)
-        self.in1_d = nn.InstanceNorm2d(3, affine=True)
+        self.deconv1 = AdaptiveResidualBlockUp(64, 32, upsample=2)
+        # self.in1_d = nn.InstanceNorm2d(3, affine=True)
+
+        self.last_conv  = nn.Conv2d(32, 3, 1, 1)
         self.activate = nn.Tanh()
 
         self.apply(weights_init)
@@ -221,62 +217,6 @@ class  Lmark2img_Generator(nn.Module):
         return out, end_idx
 
  
-class Discriminator(nn.Module):
-    def __init__(self, training_videos, gpu=None):
-        super(Discriminator, self).__init__()
-
-        self.conv1 = ResidualBlockDown(6, 64)
-        self.conv2 = ResidualBlockDown(64, 128)
-        self.conv3 = ResidualBlockDown(128, 256)
-        self.att = SelfAttention(256)
-        self.conv4 = ResidualBlockDown(256, 512)
-        self.conv5 = ResidualBlockDown(512, 512)
-        self.conv6 = ResidualBlockDown(512, 512)
-        self.res_block = ResidualBlock(512)
-
-        self.pooling = nn.AdaptiveMaxPool2d((1, 1))
-
-        self.W = nn.Parameter(torch.rand(512, training_videos).normal_(0.0, 0.02))
-        self.w_0 = nn.Parameter(torch.rand(512, 1).normal_(0.0, 0.02))
-        self.b = nn.Parameter(torch.rand(1).normal_(0.0, 0.02))
-
-        self.apply(weights_init)
-        self.gpu = gpu
-        if gpu is not None:
-            self.cuda(gpu)
-
-    def forward(self, x, y, i):
-        assert x.dim() == 4 and x.shape[1] == 3, "Both x and y must be tensors with shape [BxK, 3, W, H]."
-        assert x.shape == y.shape, "Both x and y must be tensors with shape [BxK, 3, W, H]."
-
-        if self.gpu is not None:
-            x = x.cuda(self.gpu)
-            y = y.cuda(self.gpu)
-
-        # Concatenate x & y
-        out = torch.cat((x, y), dim=1)  # [B, 6, 256, 256]
-
-        # Encode
-        out_0 = (self.conv1(out))  # [B, 64, 128, 128]
-        out_1 = (self.conv2(out_0))  # [B, 128, 64, 64]
-        out_2 = (self.conv3(out_1))  # [B, 256, 32, 32]
-        out_3 = self.att(out_2)
-        out_4 = (self.conv4(out_3))  # [B, 512, 16, 16]
-        out_5 = (self.conv5(out_4))  # [B, 512, 8, 8]
-        out_6 = (self.conv6(out_5))  # [B, 512, 4, 4]
-        out_7 = (self.res_block(out_6))
-
-        out = F.relu(self.pooling(out_7)).view(-1, 512, 1)  # [B, 512, 1]
-
-        # Calculate Realism Score
-        _out = out.transpose(1, 2)
-        _W_i = (self.W[:, i].unsqueeze(-1)).transpose(0, 1)
-        out = torch.bmm(_out, _W_i + self.w_0) + self.b
-        out = torch.sigmoid(out)
-
-        out = out.view( -1)
-
-        return out, [out_0, out_1, out_2, out_3, out_4, out_5, out_6, out_7]
 
 
 class Lmark2img_Discriminator(nn.Module):
