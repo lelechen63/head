@@ -90,7 +90,7 @@ class Lmark2rgbDataset(Dataset):
         ani_video = mmcv.VideoReader(ani_video_path)
 
         # sample frames for embedding network
-        input_indexs  = set(random.sample(range(0,64), 1))
+        input_indexs  = set(random.sample(range(0,64), 2))
 
         # we randomly choose a target frame 
         target_id =  np.random.choice([0, v_length - 1])
