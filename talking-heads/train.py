@@ -76,9 +76,9 @@ class Trainer():
        
 
         self.opt_g = torch.optim.Adam( list(self.generator.parameters()) + list( self.embedder.parameters()) ,
-            lr=LEARNING_RATE_E_G)
+            lr=config.LEARNING_RATE_E_G)
         self.opt_d = torch.optim.Adam( self.discriminator.parameters(),
-            lr=LEARNING_RATE_D)
+            lr=config.LEARNING_RATE_D)
         self.dataset = Lmark2rgbDataset(config.root, train=config.is_train)
         
         self.data_loader = DataLoader(self.dataset,
