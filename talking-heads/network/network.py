@@ -152,7 +152,7 @@ class  Lmark2img_Generator(nn.Module):
         self.in2_d = nn.InstanceNorm2d(64, affine=True)
 
         self.deconv1 = AdaptiveResidualBlockUp(64, 32, upsample=2)
-        self.in1_d = nn.InstanceNorm2d(3, affine=True)
+        self.in1_d = nn.InstanceNorm2d(32, affine=True)
 
         self.last_conv  = nn.Conv2d(32, 3, 1, 1)
         self.activate = nn.Tanh()
