@@ -76,9 +76,9 @@ class Trainer():
        
 
         self.opt_g = torch.optim.Adam( list(self.generator.parameters()) + list( self.embedder.parameters()) ,
-            lr=config.lr, betas=(config.beta1, config.beta2))
+            lr=LEARNING_RATE_E_G)
         self.opt_d = torch.optim.Adam( self.discriminator.parameters(),
-            lr=config.lr, betas=(config.beta1, config.beta2))
+            lr=LEARNING_RATE_D)
         self.dataset = Lmark2rgbDataset(config.root, train=config.is_train)
         
         self.data_loader = DataLoader(self.dataset,
@@ -219,9 +219,12 @@ class Trainer():
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--lr",
+    parser.add_argument("--LEARNING_RATE_E_G",
                         type=float,
-                        default=0.0002)
+                        default=5e-5)
+    parser.add_argument("--LEARNING_RATE_D",
+                        type=float,
+                        default=2e-4)
     parser.add_argument("--beta1",
                         type=float,
                         default=0.5)
