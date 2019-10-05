@@ -148,6 +148,7 @@ class Trainer():
                 # loss_adv = self.mse_loss_fn(D_fake, self.ones)
                 # loss_cnt = self.loss_cnt(target_rgb, fake_img)
 
+                print (fake_img.shape)
                 loss_pix = self.l1_loss_fn(fake_img, target_rgb)
 
                 # loss_gen  = loss_adv + loss_cnt + loss_pix

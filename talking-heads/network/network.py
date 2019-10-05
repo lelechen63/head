@@ -152,7 +152,7 @@ class  Lmark2img_Generator(nn.Module):
         self.in2_d = nn.InstanceNorm2d(64, affine=True)
 
         self.deconv1 = AdaptiveResidualBlockUp(64, 32, upsample=2)
-        # self.in1_d = nn.InstanceNorm2d(3, affine=True)
+        self.in1_d = nn.InstanceNorm2d(3, affine=True)
 
         self.last_conv  = nn.Conv2d(32, 3, 1, 1)
         self.activate = nn.Tanh()
@@ -191,8 +191,8 @@ class  Lmark2img_Generator(nn.Module):
         out = self.in3_d(self.deconv3(out, *self.slice_psi(psi_hat, 'deconv3')))  # [B, 128, 64, 64]
         out = self.att2(out)
         out = self.in2_d(self.deconv2(out, *self.slice_psi(psi_hat, 'deconv2')))  # [B, 64, 128, 128]
-        # out = self.in1_d(self.deconv1(out, *self.slice_psi(psi_hat, 'deconv1')))  # [B, 3, 256, 256]
-
+        out = self.in1_d(self.deconv1(out, *self.slice_psi(psi_hat, 'deconv1')))  # [B, 32, 256, 256]
+        out = self.last_conv(out)
         out = self.activate(out)
 
         return out
