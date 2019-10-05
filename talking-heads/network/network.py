@@ -93,7 +93,7 @@ class  Lmark2img_Generator(nn.Module):
         ('deconv4', (512, 256)),
         ('deconv3', (256, 128)),
         ('deconv2', (128, 64)),
-        ('deconv1', (64, 3))
+        ('deconv1', (64, 32))
     ])
 
     def __init__(self, use_ani = True):
