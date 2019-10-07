@@ -165,7 +165,7 @@ class Trainer():
                     p.requires_grad = False  # to avoid computation
                 fake_img  = self.generator( g_in, e_hat)
                 self.opt_g.zero_grad()
-                D_fake = self.discriminator(fake_img, target_lmark)
+                D_fake = self.discriminator(fake_img, g_in)
 
                 loss_adv = self.mse_loss_fn(D_fake, self.ones)
                 loss_cnt = self.loss_cnt(target_rgb, fake_img)
