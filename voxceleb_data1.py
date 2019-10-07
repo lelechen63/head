@@ -17,7 +17,7 @@ import numpy as np
 from skimage import io
 import pickle
 import cv2
-import face_alignment
+# import face_alignment
 import librosa
 from util import utils
 from tqdm import tqdm
@@ -39,10 +39,10 @@ def parse_args():
     parser.add_argument('-t','--txt_start', type=int, default=0)
     return parser.parse_args()
 config = parse_args()
-
+root = '/mnt/Data/lchen63'
 # root = '/data2/lchen63/voxceleb/'
-root ='/home/cxu-serve/p1/lchen63/voxceleb/'
-fa = face_alignment.FaceAlignment(face_alignment.LandmarksType._3D, flip_input=False)#,  device='cpu')
+# root ='/home/cxu-serve/p1/lchen63/voxceleb/'
+# fa = face_alignment.FaceAlignment(face_alignment.LandmarksType._3D, flip_input=False)#,  device='cpu')
 
 
 def get3DLmarks(frame_list, v_path):
@@ -309,7 +309,7 @@ def compute_RT(pickle_file):
     landmarks = []
     RT_list = []
     source = np.zeros((len(consider_key),3))
-    ff = np.load('./basics/00001.npy')[30]
+    # ff = np.load('./basics/00001.npy')[30]
     # ff = np.load( os.path.join(root, 'unzip', 'dev_video/id02343/08TabUdunsU/00001.npy'))[30]
     for m in range(len(consider_key)):
         source[m] = ff[consider_key[m]]
@@ -1006,7 +1006,7 @@ def file2folder(txt):
 # compose_front()
 
 # get_txt(os.path.join(root, 'unzip/test_video'))
-file2folder('/data2/lchen63/voxceleb/txt/v_dev.txt')
+# file2folder('/data2/lchen63/voxceleb/txt/v_dev.txt')
 ####################
 # get_txt(os.path.join(root, 'unzip/test_video'))
 # get_new_txt(os.path.join(root, 'txt/v_test.txt'))
@@ -1014,7 +1014,7 @@ file2folder('/data2/lchen63/voxceleb/txt/v_dev.txt')
 
 
 
-# compute_RT("txt/test.pkl")
+compute_RT("txt/train.pkl")
 
 # clean_by_RT("test.pkl")
 # compose_front("test.pkl")
