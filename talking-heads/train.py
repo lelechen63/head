@@ -54,7 +54,7 @@ class Trainer():
     def __init__(self, config):
 
         self.generator = Lmark2img_Generator2(use_ani= config.use_ani)
-        self.discriminator = Lmark2img_Discriminator()
+        self.discriminator = Lmark2img_Discriminator(use_ani= config.use_ani)
         self.embedder = Embedder()
 
 
@@ -165,7 +165,8 @@ class Trainer():
                     p.requires_grad = False  # to avoid computation
                 fake_img  = self.generator( g_in, e_hat)
                 self.opt_g.zero_grad()
-                D_fake = self.discriminator(fake_img, g_in)
+                D_fake = self.discriminator(fake_img, g_in
+                )
 
                 loss_adv = self.mse_loss_fn(D_fake, self.ones)
                 loss_cnt = self.loss_cnt(target_rgb, fake_img)
