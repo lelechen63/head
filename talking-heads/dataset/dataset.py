@@ -50,7 +50,7 @@ class Lmark2rgbDataset(Dataset):
         :param shuffle_frames: If True, each time a video is accessed, its frames will be shuffled.
         """
         self.train = train
-        self.resolution   = resolution
+        self.output_shape   = tuple([resolution, resolution])
         self.num_frames = 4  
         self.root  = dataset_dir     
         if self.train =='train':
