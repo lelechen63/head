@@ -305,7 +305,7 @@ def compute_RT(pickle_file):
     print (len(consider_key))
     k = 20
     _file = open( os.path.join( root, pickle_file) , "rb")
-    train_data = pickle.load(_file)
+    train_data = pickle.load(_file)[config.txt_start * 10000:config.txt_start * 10000 + 10000 ]
     landmarks = []
     RT_list = []
     source = np.zeros((len(consider_key),3))
@@ -1008,7 +1008,7 @@ def file2folder(txt):
 # get_txt(os.path.join(root, 'unzip/test_video'))
 # file2folder('/data2/lchen63/voxceleb/txt/v_dev.txt')
 ####################
-# get_txt(os.path.join(root, 'unzip/dev_video'))
+get_txt(os.path.join(root, 'unzip/dev_video'))
 get_new_txt(os.path.join(root, 'txt/v_dev.txt'))
 get_train_pair( os.path.join(root, 'txt/fv_dev.txt')  )
 
