@@ -69,6 +69,7 @@ class Trainer():
 
         if config.cuda:
             device_ids = [int(i) for i in config.device_ids.split(',')]
+            config.device_ids = device_ids
             # self.encoder = nn.DataParallel(self.encoder.cuda(device=config.cuda1), device_ids=device_ids)
             self.generator     = nn.DataParallel(self.generator, device_ids=device_ids).cuda()
             self.discriminator     = nn.DataParallel(self.discriminator, device_ids=device_ids).cuda()

@@ -21,8 +21,10 @@ class Loss_cnt(nn.Module):
             self.IMG_NET_STD = self.IMG_NET_STD.cuda(device=config.cuda1)
             self.l1_loss_fn = self.l1_loss_fn.cuda(device=config.cuda1)
 
-            self.VGG_FACE_AC = self.VGG_FACE_AC.cuda(device=config.cuda1)
-            self.VGG19_AC = self.VGG19_AC.cuda(device=config.cuda1)
+            self.VGG_FACE_AC = nn.DataParallel(self.VGG_FACE_AC, device_ids=config.device_ids).cuda()
+
+            self.VGG19_AC = nn.DataParallel(self.VGG19_AC, device_ids=config.device_ids).cuda()
+            
 
     def loss_cnt(self, x, x_hat):
 
