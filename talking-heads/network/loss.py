@@ -8,7 +8,7 @@ from torch.nn import functional as F
 import config
 
 class Loss_cnt(nn.Module):
-    def __init__(self, config, cuda = False):
+    def __init__(self):
         super(Loss_cnt, self).__init__()
 
         self.VGG_FACE_AC = VGG_Activations(vgg_face(pretrained=True), [1, 6, 11, 18, 25])
@@ -16,15 +16,7 @@ class Loss_cnt(nn.Module):
         self.l1_loss_fn =  nn.L1Loss()
         self.IMG_NET_MEAN = torch.Tensor([0.485, 0.456, 0.406]).reshape([1, 3, 1, 1])
         self.IMG_NET_STD = torch.Tensor([0.229, 0.224, 0.225]).reshape([1, 3, 1, 1])
-        if cuda:
-            self.IMG_NET_MEAN = self.IMG_NET_MEAN.cuda(device=config.cuda1)
-            self.IMG_NET_STD = self.IMG_NET_STD.cuda(device=config.cuda1)
-            self.l1_loss_fn = self.l1_loss_fn.cuda(device=config.cuda1)
-
-            self.VGG_FACE_AC = nn.DataParallel(self.VGG_FACE_AC, device_ids=config.device_ids).cuda()
-
-            self.VGG19_AC = nn.DataParallel(self.VGG19_AC, device_ids=config.device_ids).cuda()
-            
+        
 
     def loss_cnt(self, x, x_hat):
 
