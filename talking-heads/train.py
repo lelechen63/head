@@ -12,10 +12,30 @@ import numpy as np
 from collections import OrderedDict
 import argparse
 from dataset.dataset import  Lmark2rgbDataset 
-from network.network import Embedder ,Lmark2img_Generator , Lmark2img_Discriminator
+from network.network import Embedder ,Lmark2img_Generator2 , Lmark2img_Discriminator
 from torch.nn import init
 from network.loss import Loss_cnt
 from logger import Logger
+def weights_init(init_type='kaiming'):
+    def init_fun(m):
+        classname = m.__class__.__name__
+        if (classname.find('Conv') == 0 or classname.find(
+                'Linear') == 0) and hasattr(m, 'weight'):
+            if init_type == 'gaussian':
+                init.normal_(m.weight.data, 0.0, 0.02)
+            elif init_type == 'xavier':
+                init.xavier_normal_(m.weight.data, gain=math.sqrt(2))
+            elif init_type == 'kaiming':
+                init.kaiming_normal_(m.weight.data, a=0, mode='fan_in')
+            elif init_type == 'orthogonal':
+                init.orthogonal_(m.weight.data, gain=math.sqrt(2))
+            elif init_type == 'default':
+                pass
+            else:
+                assert 0, "Unsupported initialization: {}".format(init_type)
+            if hasattr(m, 'bias') and m.bias is not None:
+                init.constant_(m.bias.data, 0.0)
+    return init_fun
 
 
 def multi2single(model_path, id):
@@ -33,7 +53,7 @@ def multi2single(model_path, id):
 class Trainer():
     def __init__(self, config):
 
-        self.generator = Lmark2img_Generator(use_ani= config.use_ani)
+        self.generator = Lmark2img_Generator2(use_ani= config.use_ani)
         self.discriminator = Lmark2img_Discriminator()
         self.embedder = Embedder()
 
@@ -87,7 +107,9 @@ class Trainer():
                                       shuffle=True, drop_last=True)
         # data_iter = iter(self.data_loader)
         # data_iter.next()
-
+        self.encoder.apply(weights_init)
+        self.generator.apply(weights_init)
+        self.discriminator.apply(weights_init)
     def fit(self):
 
         config = self.config
@@ -211,10 +233,10 @@ class Trainer():
                     torchvision.utils.save_image(real_store,
                         "{}/img_real_{}.png".format(config.sample_dir,cc),normalize=True)
                     cc += 1
-                
+                if epoch% 5 == 0:
                 torch.save(self.generator.state_dict(),
-                            "{}/vg_net.pth"
-                            .format(config.model_dir))
+                            "{}/vg_net_{%05d}.pth"
+                            .format(config.model_dir, epoch))
                  
                 t0 = time.time()
 
@@ -222,7 +244,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--LEARNING_RATE_E_G",
                         type=float,
-                        default=5e-5)
+                        default=5e-4)
     parser.add_argument("--LEARNING_RATE_D",
                         type=float,
                         default=2e-4)
@@ -264,7 +286,7 @@ def parse_args():
                         # default='/media/lele/DATA/lrw/data2/sample/lstm_gan')
     parser.add_argument("--model_name",
                         type=str,
-                        default="lmark2rgb_single_base")
+                        default="lmark2rgb_single_base2")
                         # default="/mnt/ssd0/dat/lchen63/grid/pickle/")
                         # default = '/media/lele/DATA/lrw/data2/pickle')
     parser.add_argument('--device_ids', type=str, default='0')
