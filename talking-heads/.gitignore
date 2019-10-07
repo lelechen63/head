@@ -1,0 +1,12 @@
+
+\.idea/
+
+__pycache__/
+venv/
+
+logs/
+
+sample/
+model/
+logs/
+basics/

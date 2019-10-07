@@ -24,6 +24,12 @@ import torchvision.transforms as transforms
 import mmcv
 
 
+ 
+from io import BytesIO
+from PIL import Image
+
+
+
 # region DATASET PREPARATION
 
 
@@ -33,7 +39,7 @@ import mmcv
 class Lmark2rgbDataset(Dataset):
     """ Dataset object used to access the pre-processed VoxCelebDataset """
 
-    def __init__(self, dataset_dir, train = 'train'):
+    def __init__(self, dataset_dir, resolution,  train = 'train'):
         """
         Instantiates the Dataset.
 
@@ -44,8 +50,8 @@ class Lmark2rgbDataset(Dataset):
         :param shuffle_frames: If True, each time a video is accessed, its frames will be shuffled.
         """
         self.train = train
-        self.output_shape   = tuple([256, 256])
-        self.num_frames = 64  
+        self.resolution   = resolution
+        self.num_frames = 4  
         self.root  = dataset_dir     
         if self.train =='train':
             _file = open(os.path.join(dataset_dir, 'txt',  "front_rt2.pkl"), "rb")
@@ -62,10 +68,18 @@ class Lmark2rgbDataset(Dataset):
             # self.data = pkl.load(_file)
             _file.close()
         print (len(self.data))
-        self.transform = transforms.Compose([
+        self.transform1 = transforms.Compose([
+            transforms.Resize(size=(self.resolution,self.resolution), interpolation=Image.NEAREST),
             transforms.ToTensor(),
-            transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
+            transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5), inplace=True)
         ])
+
+        self.transform = transforms.Compose([
+            transforms.Resize(size=(256,256), interpolation=Image.NEAREST),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5), inplace=True)
+        ])
+
 
     def __len__(self):
         return len(self.data)   
@@ -90,7 +104,7 @@ class Lmark2rgbDataset(Dataset):
         ani_video = mmcv.VideoReader(ani_video_path)
 
         # sample frames for embedding network
-        input_indexs  = set(random.sample(range(0,64), 2))
+        input_indexs  = set(random.sample(range(0,64), self.num_frames))
 
         # we randomly choose a target frame 
         target_id =  np.random.choice([0, v_length - 1])
@@ -103,8 +117,8 @@ class Lmark2rgbDataset(Dataset):
             # lmark_rgb = np.array(lmark_rgb) 
 
             # resize 224 to 256
-            rgb_t  = cv2.resize(rgb_t, self.output_shape)
-            lmark_rgb  = cv2.resize(lmark_rgb, self.output_shape)
+            # rgb_t  = cv2.resize(rgb_t, self.output_shape)
+            # lmark_rgb  = cv2.resize(lmark_rgb, self.output_shape)
             
             # to tensor
             rgb_t = self.transform(rgb_t)
@@ -122,11 +136,11 @@ class Lmark2rgbDataset(Dataset):
         target_lmark = lmark[target_id]
 
         target_rgb = mmcv.bgr2rgb(target_rgb)
-        target_rgb = cv2.resize(target_rgb, self.output_shape)
-        target_rgb = self.transform(target_rgb)
+        # target_rgb = cv2.resize(target_rgb, self.output_shape)
+        target_rgb = self.transform1(target_rgb)
 
         target_ani = mmcv.bgr2rgb(target_ani)
-        target_ani = cv2.resize(target_ani, self.output_shape)
+        # target_ani = cv2.resize(target_ani, self.output_shape)
         target_ani = self.transform(target_ani)
 
         # reference_rgb = mmcv.bgr2rgb(reference_rgb)
@@ -139,8 +153,7 @@ class Lmark2rgbDataset(Dataset):
 
         target_lmark = plot_landmarks(target_lmark)
         # target_lmark = np.array(target_lmark) 
-        target_lmark  = cv2.resize(target_lmark, self.output_shape)
-        target_lmark  = cv2.resize(target_lmark, self.output_shape)
+        # target_lmark  = cv2.resize(target_lmark, self.output_shape)
         target_lmark = self.transform(target_lmark)
 
 
@@ -245,6 +258,8 @@ def plot_landmarks( landmarks):
 
 
     return blank_image
+
+
 
 
 

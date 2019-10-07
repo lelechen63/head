@@ -339,7 +339,7 @@ class  Lmark2img_Generator2(nn.Module):
                        norm='none',
                        activ='relu')
 
-        self.apply(weights_init)
+        # self.apply(weights_init)
         
     def forward(self, y, e):
 
