@@ -235,7 +235,7 @@ class Trainer():
                     cc += 1
                 if epoch% 5 == 0:
                     torch.save(self.generator.state_dict(),
-                                "{}/vg_net_{%05d}.pth"
+                                "{}/vg_net_{}.pth"
                                 .format(config.model_dir, epoch))
                  
                 t0 = time.time()
