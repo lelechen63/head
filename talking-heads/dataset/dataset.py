@@ -146,8 +146,8 @@ class Lmark2rgbDataset(Dataset):
         # reference_ani = self.transform(reference_ani)
 
         target_lmark = plot_landmarks(target_lmark)
-        # target_lmark = np.array(target_lmark) 
-        # target_lmark  = cv2.resize(target_lmark, self.output_shape)
+        target_lmark = np.array(target_lmark) 
+        target_lmark  = cv2.resize(target_lmark, self.output_shape)
         target_lmark = self.transform(target_lmark)
 
 
