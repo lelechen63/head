@@ -258,7 +258,7 @@ def get_train_pair(txt):
             txt_w.writelines(line + ':' + str(finished[line]))
     txt_f.close()
     print (kk[:2])
-    with open(os.path.join( root, 'txt','train2.pkl'), 'wb') as handle:
+    with open(os.path.join( root, 'txt','train.pkl'), 'wb') as handle:
         pickle.dump(kk, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
     
@@ -1008,13 +1008,13 @@ def file2folder(txt):
 # get_txt(os.path.join(root, 'unzip/test_video'))
 # file2folder('/data2/lchen63/voxceleb/txt/v_dev.txt')
 ####################
-get_txt(os.path.join(root, 'unzip/dev_video'))
-# get_new_txt(os.path.join(root, 'txt/v_dev.txt'))
-# get_train_pair( os.path.join(root, 'txt/fv_dev.txt')  )
+# get_txt(os.path.join(root, 'unzip/dev_video'))
+get_new_txt(os.path.join(root, 'txt/v_dev.txt'))
+get_train_pair( os.path.join(root, 'txt/fv_dev.txt')  )
 
 
 
-# compute_RT("txt/train.pkl")
+compute_RT("txt/train.pkl")
 
 # clean_by_RT("test.pkl")
 # compose_front("test.pkl")
