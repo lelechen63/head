@@ -187,7 +187,7 @@ import numpy as np
 def get_new_txt(txt):
 
     file_list = []
-    txt_w = open( os.path.join(root,'txt', 'fv_test.txt'), 'wb') 
+    txt_w = open( os.path.join(root,'txt', 'fv_dev.txt'), 'wb') 
     
     
     txt_f = open(txt, 'rb')
@@ -1009,7 +1009,7 @@ def file2folder(txt):
 # file2folder('/data2/lchen63/voxceleb/txt/v_dev.txt')
 ####################
 # get_txt(os.path.join(root, 'unzip/test_video'))
-# get_new_txt(os.path.join(root, 'txt/v_test.txt'))
+get_new_txt(os.path.join(root, 'txt/v_train.txt'))
 get_train_pair( os.path.join(root, 'txt/fv_dev.txt')  )
 
 
