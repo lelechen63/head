@@ -5,20 +5,10 @@ import torch
 import torch.nn as nn
 from torch.nn import functional as F
 
-from components import ResidualBlock, AdaptiveResidualBlock, ResidualBlockDown, AdaptiveResidualBlockUp, SelfAttention
-from blocks import LinearBlock, Conv2dBlock, ResBlocks, ActFirstResBlock
+from network.components import ResidualBlock, AdaptiveResidualBlock, ResidualBlockDown, AdaptiveResidualBlockUp, SelfAttention
+from network.blocks import LinearBlock, Conv2dBlock, ResBlocks, ActFirstResBlock
 
-def weights_init(m):
-    classname = m.__class__.__name__
-    if classname.find('Conv2d') != -1:
-        m.weight.data.normal_(0.0, 0.02)
-    if classname.find('Linear') != -1:
-        # m.weight.data.normal_(0.0, 0.02)
-        nn.init.xavier_uniform_(m.weight.data)
-        m.bias.data.fill_(0)
-    elif classname.find('InstanceNorm2d') != -1:
-        m.weight.data.normal_(1.0, 0.02)
-        m.bias.data.fill_(0)
+
 
 def assign_adain_params(adain_params, model):
     # assign the adain_params to the AdaIN layers in model
@@ -59,7 +49,7 @@ class Embedder(nn.Module):
 
         self.pooling = nn.AdaptiveMaxPool2d((1, 1))
 
-        self.apply(weights_init)
+        # self.apply(weights_init)
        
 
     def forward(self, x, y):   #(x: img, y: lmark)
@@ -193,15 +183,9 @@ class  Lmark2img_Generator(nn.Module):
         self.last_conv  = nn.Conv2d(32, 3, 1, 1)
         self.activate = nn.Tanh()
 
-        self.apply(weights_init)
+        # self.apply(weights_init)
 
 
-        self.mlp = MLP(latent_dim,
-                       get_num_adain_params(self.dec),
-                       nf_mlp,
-                       n_mlp_blks,
-                       norm='none',
-                       activ='relu')
         
     def forward(self, y, e):
 
@@ -354,6 +338,8 @@ class  Lmark2img_Generator2(nn.Module):
                        3,
                        norm='none',
                        activ='relu')
+
+        self.apply(weights_init)
         
     def forward(self, y, e):
 
@@ -417,7 +403,7 @@ class Lmark2img_Discriminator(nn.Module):
 
         self.linear = nn.Linear(512, 1)
 
-        self.apply(weights_init)
+        # self.apply(weights_init)
     
 
     def forward(self, x, y): #x:  img, y: landmark 
