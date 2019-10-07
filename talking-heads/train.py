@@ -175,6 +175,10 @@ class Trainer():
 
                 loss_pix = self.l1_loss_fn(fake_img, target_rgb)
 
+                print (loss_pix.shape)
+
+                print (loss_cnt.shape)
+
                 loss_gen  = loss_adv + loss_cnt.mean() + loss_pix
 
                 loss_pix.backward()
@@ -212,7 +216,7 @@ class Trainer():
                 logger.scalar_summary('loss_disc', loss_disc.item(),epoch * num_steps_per_epoch + step+1)
                 logger.scalar_summary('loss_gen', loss_gen.item(),epoch * num_steps_per_epoch + step+1)
                 logger.scalar_summary('loss_pix', loss_pix.item(),epoch * num_steps_per_epoch + step+1)
-                logger.scalar_summary('loss_cnt_G', loss_cnt.item(),epoch * num_steps_per_epoch + step+1)
+                logger.scalar_summary('loss_cnt_G', loss_cnt.mean().item(),epoch * num_steps_per_epoch + step+1)
                 logger.scalar_summary('loss_ani', loss_ani.item(),epoch * num_steps_per_epoch + step+1)
                 t2 = time.time()
                 
