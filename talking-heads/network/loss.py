@@ -14,8 +14,8 @@ class Loss_cnt(nn.Module):
         self.VGG_FACE_AC = VGG_Activations(vgg_face(pretrained=True), [1, 6, 11, 18, 25])
         self.VGG19_AC = VGG_Activations(vgg19(pretrained=True), [1, 6, 11, 20, 29])
         self.l1_loss_fn =  nn.L1Loss()
-        self.IMG_NET_MEAN = torch.Tensor([0.485, 0.456, 0.406]).reshape([1, 3, 1, 1])
-        self.IMG_NET_STD = torch.Tensor([0.229, 0.224, 0.225]).reshape([1, 3, 1, 1])
+        self.IMG_NET_MEAN = nn.Parameter(torch.Tensor([0.485, 0.456, 0.406]).reshape([1, 3, 1, 1]), requires_grad= False)
+        self.IMG_NET_STD = nn.Parameter(torch.Tensor([0.229, 0.224, 0.225]).reshape([1, 3, 1, 1]), requires_grad= False)
         
 
     def loss_cnt(self, x, x_hat):
