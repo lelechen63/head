@@ -171,15 +171,15 @@ class Trainer():
                 )
 
                 loss_adv = self.mse_loss_fn(D_fake, self.ones)
-                loss_cnt = self.loss_cnt(target_rgb, fake_img)
+                loss_cnt = self.loss_cnt(target_rgb, fake_img).mean()
 
                 loss_pix = self.l1_loss_fn(fake_img, target_rgb)
 
-                print (loss_pix.shape)
+                # print (loss_pix.shape)
 
-                print (loss_cnt.shape)
+                # print (loss_cnt.shape)
 
-                loss_gen  = loss_adv + loss_cnt.mean() + loss_pix
+                loss_gen  = loss_adv + loss_cnt + loss_pix
 
                 loss_pix.backward()
                 self.opt_g.step()
@@ -216,7 +216,7 @@ class Trainer():
                 logger.scalar_summary('loss_disc', loss_disc.item(),epoch * num_steps_per_epoch + step+1)
                 logger.scalar_summary('loss_gen', loss_gen.item(),epoch * num_steps_per_epoch + step+1)
                 logger.scalar_summary('loss_pix', loss_pix.item(),epoch * num_steps_per_epoch + step+1)
-                logger.scalar_summary('loss_cnt_G', loss_cnt.mean().item(),epoch * num_steps_per_epoch + step+1)
+                logger.scalar_summary('loss_cnt_G', loss_cnt.item(),epoch * num_steps_per_epoch + step+1)
                 logger.scalar_summary('loss_ani', loss_ani.item(),epoch * num_steps_per_epoch + step+1)
                 t2 = time.time()
                 
