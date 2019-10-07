@@ -62,11 +62,11 @@ def get3DLmarks(frame_list, v_path):
 
 def get_txt(folder):
     file_list = []
-    txt_f = open( os.path.join(root,'txt', 'v_test.txt'), 'wb') 
+    txt_f = open( os.path.join(root,'txt', 'v_dev.txt'), 'wb') 
     for r, dirnames, filenames in os.walk(folder):
         for filename in filenames:
-            if filename.endswith(('_ani.mpg', '_ani.mov', '_ani.mp4')):
-                filepath = os.path.join(r, filename.replace('_ani.mp4','.mp4'))
+            if filename.endswith(( '.mp4')) and  '_ani' not in filename :
+                filepath = os.path.join(r, filename)
 #                 print (filepath, filename)
                 file_list.append(filepath)
     # print (file_list[:10])
@@ -1008,9 +1008,9 @@ def file2folder(txt):
 # get_txt(os.path.join(root, 'unzip/test_video'))
 # file2folder('/data2/lchen63/voxceleb/txt/v_dev.txt')
 ####################
-# get_txt(os.path.join(root, 'unzip/test_video'))
-get_new_txt(os.path.join(root, 'txt/v_dev.txt'))
-get_train_pair( os.path.join(root, 'txt/fv_dev.txt')  )
+get_txt(os.path.join(root, 'unzip/dev_video'))
+# get_new_txt(os.path.join(root, 'txt/v_dev.txt'))
+# get_train_pair( os.path.join(root, 'txt/fv_dev.txt')  )
 
 
 
