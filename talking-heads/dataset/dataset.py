@@ -68,14 +68,8 @@ class Lmark2rgbDataset(Dataset):
             # self.data = pkl.load(_file)
             _file.close()
         print (len(self.data))
-        self.transform1 = transforms.Compose([
-            transforms.Resize(size=(self.resolution,self.resolution), interpolation=Image.NEAREST),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5), inplace=True)
-        ])
-
+        
         self.transform = transforms.Compose([
-            transforms.Resize(size=(256,256), interpolation=Image.NEAREST),
             transforms.ToTensor(),
             transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5), inplace=True)
         ])
@@ -117,8 +111,8 @@ class Lmark2rgbDataset(Dataset):
             # lmark_rgb = np.array(lmark_rgb) 
 
             # resize 224 to 256
-            # rgb_t  = cv2.resize(rgb_t, self.output_shape)
-            # lmark_rgb  = cv2.resize(lmark_rgb, self.output_shape)
+            rgb_t  = cv2.resize(rgb_t, self.output_shape)
+            lmark_rgb  = cv2.resize(lmark_rgb, self.output_shape)
             
             # to tensor
             rgb_t = self.transform(rgb_t)
@@ -136,11 +130,11 @@ class Lmark2rgbDataset(Dataset):
         target_lmark = lmark[target_id]
 
         target_rgb = mmcv.bgr2rgb(target_rgb)
-        # target_rgb = cv2.resize(target_rgb, self.output_shape)
-        target_rgb = self.transform1(target_rgb)
+        target_rgb = cv2.resize(target_rgb, self.output_shape)
+        target_rgb = self.transform(target_rgb)
 
         target_ani = mmcv.bgr2rgb(target_ani)
-        # target_ani = cv2.resize(target_ani, self.output_shape)
+        target_ani = cv2.resize(target_ani, self.output_shape)
         target_ani = self.transform(target_ani)
 
         # reference_rgb = mmcv.bgr2rgb(reference_rgb)
