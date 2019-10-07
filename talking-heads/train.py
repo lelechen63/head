@@ -107,7 +107,7 @@ class Trainer():
                                       shuffle=True, drop_last=True)
         # data_iter = iter(self.data_loader)
         # data_iter.next()
-        self.encoder.apply(weights_init)
+        self.embedder.apply(weights_init)
         self.generator.apply(weights_init)
         self.discriminator.apply(weights_init)
     def fit(self):
