@@ -75,10 +75,11 @@ class Trainer():
             self.discriminator     = nn.DataParallel(self.discriminator, device_ids=device_ids).cuda()
             self.embedder     = nn.DataParallel(self.embedder, device_ids=device_ids).cuda()
 
+            self.loss_cnt     = nn.DataParallel(self.loss_cnt, device_ids=device_ids).cuda()
+
             self.bce_loss_fn   = self.bce_loss_fn.cuda(device=config.cuda1)
             self.mse_loss_fn   = self.mse_loss_fn.cuda(device=config.cuda1)
             self.l1_loss_fn = self.l1_loss_fn.cuda(device=config.cuda1)
-            self.loss_cnt = Loss_cnt(config, cuda = True)
 
             self.ones          = self.ones.cuda(device=config.cuda1)
             self.zeros          = self.zeros.cuda(device=config.cuda1)

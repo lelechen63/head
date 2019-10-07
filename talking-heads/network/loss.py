@@ -8,7 +8,7 @@ from torch.nn import functional as F
 import config
 
 class Loss_cnt(nn.Module):
-    def __init__(self, config, cuda = True):
+    def __init__(self, config, cuda = False):
         super(Loss_cnt, self).__init__()
 
         self.VGG_FACE_AC = VGG_Activations(vgg_face(pretrained=True), [1, 6, 11, 18, 25])
