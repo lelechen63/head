@@ -234,9 +234,9 @@ class Trainer():
                         "{}/img_real_{}.png".format(config.sample_dir,cc),normalize=True)
                     cc += 1
                 if epoch% 5 == 0:
-                torch.save(self.generator.state_dict(),
-                            "{}/vg_net_{%05d}.pth"
-                            .format(config.model_dir, epoch))
+                    torch.save(self.generator.state_dict(),
+                                "{}/vg_net_{%05d}.pth"
+                                .format(config.model_dir, epoch))
                  
                 t0 = time.time()
 
