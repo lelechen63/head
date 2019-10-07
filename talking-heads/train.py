@@ -175,7 +175,7 @@ class Trainer():
 
                 loss_pix = self.l1_loss_fn(fake_img, target_rgb)
 
-                loss_gen  = loss_adv + loss_cnt + loss_pix
+                loss_gen  = loss_adv + loss_cnt.mean() + loss_pix
 
                 loss_pix.backward()
                 self.opt_g.step()
