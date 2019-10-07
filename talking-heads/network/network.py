@@ -5,7 +5,8 @@ import torch
 import torch.nn as nn
 from torch.nn import functional as F
 
-from network.components import ResidualBlock, AdaptiveResidualBlock, ResidualBlockDown, AdaptiveResidualBlockUp, SelfAttention
+from components import ResidualBlock, AdaptiveResidualBlock, ResidualBlockDown, AdaptiveResidualBlockUp, SelfAttention
+from blocks import LinearBlock, Conv2dBlock, ResBlocks, ActFirstResBlock
 
 def weights_init(m):
     classname = m.__class__.__name__
@@ -18,6 +19,26 @@ def weights_init(m):
     elif classname.find('InstanceNorm2d') != -1:
         m.weight.data.normal_(1.0, 0.02)
         m.bias.data.fill_(0)
+
+def assign_adain_params(adain_params, model):
+    # assign the adain_params to the AdaIN layers in model
+    for m in model.modules():
+        if m.__class__.__name__ == "AdaptiveInstanceNorm2d":
+            mean = adain_params[:, :m.num_features]
+            std = adain_params[:, m.num_features:2*m.num_features]
+            m.bias = mean.contiguous().view(-1)
+            m.weight = std.contiguous().view(-1)
+            if adain_params.size(1) > 2*m.num_features:
+                adain_params = adain_params[:, 2*m.num_features:]
+
+
+def get_num_adain_params(model):
+    # return the number of AdaIN parameters needed by the model
+    num_adain_params = 0
+    for m in model.modules():
+        if m.__class__.__name__ == "AdaptiveInstanceNorm2d":
+            num_adain_params += 2*m.num_features
+    return num_adain_params
 
 
 class Embedder(nn.Module):
@@ -79,6 +100,21 @@ class Embedder(nn.Module):
 
 # g= model(b, b)
 # # print ('================')
+
+class MLP(nn.Module):
+    def __init__(self, in_dim, out_dim, dim, n_blk, norm, activ):
+
+        super(MLP, self).__init__()
+        self.model = []
+        self.model += [LinearBlock(in_dim, dim, norm=norm, activation=activ)]
+        for i in range(n_blk - 2):
+            self.model += [LinearBlock(dim, dim, norm=norm, activation=activ)]
+        self.model += [LinearBlock(dim, out_dim,
+                                   norm='none', activation='none')]
+        self.model = nn.Sequential(*self.model)
+
+    def forward(self, x):
+        return self.model(x.view(x.size(0), -1))
 
 
 class  Lmark2img_Generator(nn.Module):
@@ -158,6 +194,14 @@ class  Lmark2img_Generator(nn.Module):
         self.activate = nn.Tanh()
 
         self.apply(weights_init)
+
+
+        self.mlp = MLP(latent_dim,
+                       get_num_adain_params(self.dec),
+                       nf_mlp,
+                       n_mlp_blks,
+                       norm='none',
+                       activ='relu')
         
     def forward(self, y, e):
 
@@ -216,7 +260,144 @@ class  Lmark2img_Generator(nn.Module):
 
         return out, end_idx
 
- 
+
+
+class  Lmark2img_Generator2(nn.Module):
+    ADAIN_LAYERS = OrderedDict([
+        ('res1', (512, 512)),
+        ('res2', (512, 512)),
+        ('res3', (512, 512)),
+        ('res4', (512, 512)),
+        ('res5', (512, 512)),
+        ('deconv6', (512, 512)),
+        ('deconv5', (512, 512)),
+        ('deconv4', (512, 256)),
+        ('deconv3', (256, 128)),
+        ('deconv2', (128, 64)),
+        ('deconv1', (64, 32))
+    ])
+
+    def __init__(self, use_ani = True):
+        super( Lmark2img_Generator2, self).__init__()
+
+        # encoding layers
+        if use_ani == True:
+            self.conv1 = ResidualBlockDown(6, 64)            #(64,128,128)
+        else:
+            self.conv1 = ResidualBlockDown(3, 64)            #(64,128,128)
+        self.in1_e = nn.InstanceNorm2d(64, affine=True)
+
+        self.conv2 = ResidualBlockDown(64, 128)      #(128,64,64)
+        self.in2_e = nn.InstanceNorm2d(128, affine=True)
+
+        self.conv3 = ResidualBlockDown(128, 256)      #(256,32,32)
+        self.in3_e = nn.InstanceNorm2d(256, affine=True)
+
+        self.att1 = SelfAttention(256)
+
+        self.conv4 = ResidualBlockDown(256, 512)        #(512,16,16)
+        self.in4_e = nn.InstanceNorm2d(512, affine=True)
+
+        self.conv5 = ResidualBlockDown(512, 512)        #(512,8,8)
+        self.in5_e = nn.InstanceNorm2d(512, affine=True)
+
+        self.conv6 = ResidualBlockDown(512, 512)        #(512,4,4)
+        self.in6_e = nn.InstanceNorm2d(512, affine=True)
+        self.model = []
+
+        activ='relu'
+        pad_type='reflect'
+        self.model += [ResBlocks(2, 512, norm  = 'adain', activation=activ, pad_type='reflect')]
+        self.model += [nn.Upsample(scale_factor=2),
+                        Conv2dBlock(512, 512, 5, 1, 2,
+                                    norm='in',
+                                    activation=activ,
+                                    pad_type=pad_type)]    # 512, 8 , 8 
+        self.model += [nn.Upsample(scale_factor=2),
+                        Conv2dBlock(512, 512, 5, 1, 2,
+                                    norm='in',
+                                    activation=activ,
+                                    pad_type=pad_type)] # 512, 16 , 16 
+        self.model += [nn.Upsample(scale_factor=2),
+                        Conv2dBlock(512, 256, 5, 1, 2,
+                                    norm='in',
+                                    activation=activ,
+                                    pad_type=pad_type)] # 256, 32, 32 
+        self.model += [nn.Upsample(scale_factor=2),
+                        Conv2dBlock(256, 256, 5, 1, 2,
+                                    norm='in',
+                                    activation=activ,
+                                    pad_type=pad_type)] # 256, 64, 64 
+        self.model += [nn.Upsample(scale_factor=2), 
+                        Conv2dBlock(256, 128, 5, 1, 2,
+                                    norm='in',
+                                    activation=activ,
+                                    pad_type=pad_type)]  # 128, 128, 128 
+        self.model += [nn.Upsample(scale_factor=2), 
+                        Conv2dBlock(128, 64, 5, 1, 2,
+                                    norm='in',
+                                    activation=activ,
+                                    pad_type=pad_type)]  # 64, 256, 256 
+        self.model += [Conv2dBlock(64, 3, 7, 1, 3,
+                                   norm='none',
+                                   activation='tanh',
+                                   pad_type=pad_type)]
+        self.decoder = nn.Sequential(*self.model)
+
+
+        # self.apply(weights_init)
+
+
+        self.mlp = MLP(512,
+                       get_num_adain_params(self.decoder),
+                       256,
+                       3,
+                       norm='none',
+                       activ='relu')
+        
+    def forward(self, y, e):
+
+        out = y  # [B, 6, 256, 256]
+
+      
+        # Encode
+        out = self.in1_e(self.conv1(out))  # [B, 64, 128, 128]
+        out = self.in2_e(self.conv2(out))  # [B, 128, 64, 64]
+        out = self.in3_e(self.conv3(out))  # [B, 256, 32, 32]
+        out = self.att1(out)
+        out = self.in4_e(self.conv4(out))  # [B, 512, 16, 16]
+        out = self.in5_e(self.conv5(out))  # [B, 512, 8, 8]
+        out = self.in6_e(self.conv6(out))  # [B, 512, 4, 4]
+    
+        # Decode
+        adain_params = self.mlp(e)
+        assign_adain_params(adain_params, self.decoder)
+
+        image = self.decoder(out)
+
+# from torch.autograd import Variable
+
+# import numpy as np
+# model = Lmark2img_Generator2().cuda()
+# torch.set_printoptions(precision=6)
+# print (model)
+# # a = torch.zeros(2, 136).cuda()
+
+# # a = a + 0.0001
+# # a = Variable(a)
+
+# # print (a.data)
+# # a.shape
+# b = torch.FloatTensor(2, 6, 256, 256).cuda()
+# b = Variable(b)
+
+# a = torch.FloatTensor(2, 512)
+# a = Variable(a).cuda()
+
+# g= model(b, a)
+# # print ('================')
+
+
 
 
 class Lmark2img_Discriminator(nn.Module):
