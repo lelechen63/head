@@ -360,6 +360,7 @@ class  Lmark2img_Generator2(nn.Module):
         assign_adain_params(adain_params, self.decoder)
 
         image = self.decoder(out)
+        return image
 
 # from torch.autograd import Variable
 
