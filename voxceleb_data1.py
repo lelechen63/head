@@ -215,7 +215,7 @@ def get_new_txt(txt):
 def get_train_pair(txt):
 
     file_list = []
-    txt_w = open( os.path.join(root,'txt', 'pair_test.txt'), 'wb') 
+    txt_w = open( os.path.join(root,'txt', 'pair_train2.txt'), 'wb') 
     
     
     txt_f = open(txt, 'rb')
@@ -232,7 +232,7 @@ def get_train_pair(txt):
     #         img_length = len(os.listdir(img_path))
             tmp =  v_path.split('/')
             key = os.path.join(tmp[-4],tmp[-3],tmp[-2])
-            lmark_length = np.load( v_path + '_front.npy').shape[0] 
+            lmark_length = np.load( v_path + '.npy').shape[0] 
             if lmark_length < 64:
                 continue
             if key not in finished.keys():
@@ -258,7 +258,7 @@ def get_train_pair(txt):
             txt_w.writelines(line + ':' + str(finished[line]))
     txt_f.close()
     print (kk[:2])
-    with open(os.path.join( root, 'txt','test.pkl'), 'wb') as handle:
+    with open(os.path.join( root, 'txt','train2.pkl'), 'wb') as handle:
         pickle.dump(kk, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
     
@@ -1010,11 +1010,11 @@ def file2folder(txt):
 ####################
 # get_txt(os.path.join(root, 'unzip/test_video'))
 # get_new_txt(os.path.join(root, 'txt/v_test.txt'))
-# get_train_pair( os.path.join(root, 'txt/fv_test.txt')  )
+get_train_pair( os.path.join(root, 'txt/fv_train.txt')  )
 
 
 
-compute_RT("txt/train.pkl")
+# compute_RT("txt/train.pkl")
 
 # clean_by_RT("test.pkl")
 # compose_front("test.pkl")
