@@ -99,7 +99,7 @@ class Trainer():
             lr=config.LEARNING_RATE_E_G)
         self.opt_d = torch.optim.Adam( self.discriminator.parameters(),
             lr=config.LEARNING_RATE_D)
-        self.dataset = Lmark2rgbDataset(config.root, train=config.is_train)
+        self.dataset = Lmark2rgbDataset(config.root, resolution = 256, train=config.is_train)
         
         self.data_loader = DataLoader(self.dataset,
                                       batch_size=config.batch_size,
