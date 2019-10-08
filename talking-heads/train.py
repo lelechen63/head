@@ -14,7 +14,7 @@ import argparse
 from dataset.dataset import  Lmark2rgbDataset 
 from network.network import Embedder ,Lmark2img_Generator2 , Lmark2img_Discriminator
 from torch.nn import init
-from network.loss import Loss_cnt
+from network.loss import LossCnt
 from logger import Logger
 def weights_init(init_type='kaiming'):
     def init_fun(m):
@@ -75,7 +75,7 @@ class Trainer():
             self.discriminator     = nn.DataParallel(self.discriminator, device_ids=device_ids).cuda()
             self.embedder     = nn.DataParallel(self.embedder, device_ids=device_ids).cuda()
 
-            self.loss_cnt     = nn.DataParallel(Loss_cnt(), device_ids=device_ids).cuda()
+            self.loss_cnt     = nn.DataParallel(LossCnt(), device_ids=device_ids).cuda()
 
             self.bce_loss_fn   = self.bce_loss_fn.cuda(device=config.cuda1)
             self.mse_loss_fn   = self.mse_loss_fn.cuda(device=config.cuda1)
