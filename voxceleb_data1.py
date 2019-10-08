@@ -305,7 +305,10 @@ def compute_RT(pickle_file):
     print (len(consider_key))
     k = 20
     _file = open( os.path.join( root, pickle_file) , "rb")
-    train_data = pickle.load(_file)[config.txt_start * 10000  + 50000:config.txt_start * 10000 + 50000 ]
+    train_data = pickle.load(_file)
+    gg = len(train_data)
+    print (gg)
+    train_data = train_data[int(config.txt_start * 0.1 * gg) : int(( 1+ config.txt_start) * 0.1 * gg )]
     landmarks = []
     RT_list = []
     source = np.zeros((len(consider_key),3))
