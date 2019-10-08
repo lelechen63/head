@@ -23,7 +23,7 @@ class LossCnt(nn.Module):
         VGGFace_body_path = os.path.join(root, 'vggface' , 'Pytorch_VGGFACE_IR.py')
         VGGFace_weight_path = os.path.join(root, 'vggface' , 'Pytorch_VGGFACE.pth')
         MainModel = imp.load_source('MainModel', VGGFace_body_path)
-        full_VGGFace = torch.load(VGGFace_weight_path)
+        full_VGGFace = torch.load(VGGFace_weight_path, map_location = 'cpu')
         cropped_VGGFace = Cropped_VGG19()
         cropped_VGGFace.load_state_dict(full_VGGFace.state_dict(), strict = False)
         self.VGGFace = cropped_VGGFace
