@@ -30,9 +30,9 @@ class LossCnt(nn.Module):
         self.VGGFace.eval()
 
     def forward(self, x, x_hat, vgg19_weight=1e-2, vggface_weight=2e-3):
-        print (x.shape)
-        print (x_hat.shape)
-        print ('===========')
+        # print (x.shape)
+        # print (x_hat.shape)
+        # print ('===========')
         l1_loss = nn.L1Loss()
 
         """Retrieve vggface feature maps"""
@@ -94,6 +94,8 @@ class LossCnt(nn.Module):
         
         loss19 = 0
         for x_feat, xhat_feat in zip(vgg_x_features, vgg_xhat_features):
+            print (x_feat.shape)
+            print (xhat_feat.shape)
             loss19 += l1_loss(x_feat, xhat_feat)
 
         loss = vgg19_weight * loss19 + vggface_weight * lossface
