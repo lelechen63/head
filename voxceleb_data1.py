@@ -1018,10 +1018,10 @@ def file2folder(txt):
 
 
 
-compute_RT("txt/train.pkl")
+# compute_RT("txt/train.pkl")
 
-# clean_by_RT("test.pkl")
-# compose_front("test.pkl")
+clean_by_RT("train.pkl")
+compose_front("train_clean.pkl")
 # for_3d_to_rgb()
 
 
