@@ -167,9 +167,9 @@ class Trainer():
                     p.requires_grad = False  # to avoid computation
                 fake_img  = self.generator( g_in, e_hat)
                 self.opt_g.zero_grad()
-                # D_fake = self.discriminator(fake_img, g_in   )
+                D_fake = self.discriminator(fake_img, g_in   )
 
-                # loss_adv = self.mse_loss_fn(D_fake, self.ones)
+                loss_adv = self.mse_loss_fn(D_fake, self.ones)
                 loss_cnt = self.loss_cnt(target_rgb, fake_img).mean()
 
                 loss_pix = self.l1_loss_fn(fake_img, target_rgb)
@@ -178,50 +178,50 @@ class Trainer():
 
                 # print (loss_cnt.shape)
 
-                loss_gen  =   loss_cnt + loss_pix#  + loss_adv
+                loss_gen  =   loss_cnt + loss_pix  + loss_adv
 
                 loss_pix.backward()
                 self.opt_g.step()
 
-                # #train the discriminator
-                # for p in self.discriminator.parameters():
-                #     p.requires_grad =  True
+                #train the discriminator
+                for p in self.discriminator.parameters():
+                    p.requires_grad =  True
 
-                # self.opt_d.zero_grad()
+                self.opt_d.zero_grad()
 
-                # fake_img = self.generator( g_in, e_hat)
+                fake_img = self.generator( g_in, e_hat)
                 
 
-                # # train with real image
-                # D_real= self.discriminator(target_rgb, g_in)
-                # loss_real = self.mse_loss_fn(D_real, self.ones)
+                # train with real image
+                D_real= self.discriminator(target_rgb, g_in)
+                loss_real = self.mse_loss_fn(D_real, self.ones)
 
-                # # train with fake image
-                # D_fake  = self.discriminator(fake_img.detach(), g_in)
-                # loss_fake = self.mse_loss_fn(D_fake, self.zeros)
+                # train with fake image
+                D_fake  = self.discriminator(fake_img.detach(), g_in)
+                loss_fake = self.mse_loss_fn(D_fake, self.zeros)
 
 
-                # # train with ani image
-                # D_ani  = self.discriminator(target_ani,  g_in)
-                # loss_ani = self.mse_loss_fn(D_ani, self.zeros)
+                # train with ani image
+                D_ani  = self.discriminator(target_ani,  g_in)
+                loss_ani = self.mse_loss_fn(D_ani, self.zeros)
 
-                # loss_disc = loss_real  +  loss_fake + loss_ani
+                loss_disc = loss_real  +  loss_fake + loss_ani
 
-                # loss_disc.backward()
-                # self.opt_d.step()
+                loss_disc.backward()
+                self.opt_d.step()
 
 
     
-                # logger.scalar_summary('loss_disc', loss_disc.item(),epoch * num_steps_per_epoch + step+1)
+                logger.scalar_summary('loss_disc', loss_disc.item(),epoch * num_steps_per_epoch + step+1)
                 logger.scalar_summary('loss_gen', loss_gen.item(),epoch * num_steps_per_epoch + step+1)
                 logger.scalar_summary('loss_pix', loss_pix.item(),epoch * num_steps_per_epoch + step+1)
                 logger.scalar_summary('loss_cnt_G', loss_cnt.item(),epoch * num_steps_per_epoch + step+1)
-                # logger.scalar_summary('loss_ani', loss_ani.item(),epoch * num_steps_per_epoch + step+1)
+                logger.scalar_summary('loss_ani', loss_ani.item(),epoch * num_steps_per_epoch + step+1)
                 t2 = time.time()
                 
                 # if (step) % 10 == 0 :
-                # print("[{}/{}][{}/{}]  ,  loss_disc: {:.8f},   loss_gen: {:.8f}  ,  loss_pix: {:.8f} , loss_cnt: {:.8f}, data time: {:.4f},  model time: {} second".format(epoch+1, config.max_epochs, step+1, num_steps_per_epoch, loss_disc.item(),  loss_gen.item(),loss_pix.item(), loss_cnt.item(),  t1-t0,  t2 - t1))
-                print("[{}/{}][{}/{}]  , loss_pix: {:.8f} , data time: {:.4f},  model time: {} second".format(epoch+1, config.max_epochs, step+1, num_steps_per_epoch, loss_pix.item(),  t1-t0,  t2 - t1))
+                print("[{}/{}][{}/{}]  ,  loss_disc: {:.8f},   loss_gen: {:.8f}  ,  loss_pix: {:.8f} , loss_cnt: {:.8f}, data time: {:.4f},  model time: {} second".format(epoch+1, config.max_epochs, step+1, num_steps_per_epoch, loss_disc.item(),  loss_gen.item(),loss_pix.item(), loss_cnt.item(),  t1-t0,  t2 - t1))
+                # print("[{}/{}][{}/{}]  , loss_pix: {:.8f} , data time: {:.4f},  model time: {} second".format(epoch+1, config.max_epochs, step+1, num_steps_per_epoch, loss_pix.item(),  t1-t0,  t2 - t1))
 
                 if (step) % (int(num_steps_per_epoch  / 2 )) == 0 :
                     
@@ -292,7 +292,7 @@ def parse_args():
                         # default='/media/lele/DATA/lrw/data2/sample/lstm_gan')
     parser.add_argument("--model_name",
                         type=str,
-                        default="lmark2rgb_single_base2_all_loss")
+                        default="lmark2rgb_single_base2_all_loss_gan")
                         # default="/mnt/ssd0/dat/lchen63/grid/pickle/")
                         # default = '/media/lele/DATA/lrw/data2/pickle')
     parser.add_argument('--device_ids', type=str, default='0')
