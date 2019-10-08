@@ -1,6 +1,6 @@
 from network.vgg import Cropped_VGG19
 from torchvision.models import vgg19
-
+import torchvision
 import torch
 from torch import nn
 from torch.nn import functional as F
