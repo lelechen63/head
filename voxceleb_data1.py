@@ -1008,9 +1008,9 @@ def file2folder(txt):
 # get_txt(os.path.join(root, 'unzip/test_video'))
 # file2folder('/data2/lchen63/voxceleb/txt/v_dev.txt')
 ####################
-get_txt(os.path.join(root, 'unzip/dev_video'))
-get_new_txt(os.path.join(root, 'txt/v_dev.txt'))
-get_train_pair( os.path.join(root, 'txt/fv_dev.txt')  )
+# get_txt(os.path.join(root, 'unzip/dev_video'))
+# get_new_txt(os.path.join(root, 'txt/v_dev.txt'))
+# get_train_pair( os.path.join(root, 'txt/fv_dev.txt')  )
 
 
 
