@@ -10,7 +10,7 @@ import os
 
 import imp
 
-root = '/data2/lchen63/voxceleb'
+root = '/mnt/Data/lchen63/voxceleb'
 
 
 class LossCnt(nn.Module):
