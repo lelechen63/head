@@ -10,11 +10,11 @@ import os
 
 import imp
 
-root = '/mnt/Data/lchen63/voxceleb'
+# root = '/mnt/Data/lchen63/voxceleb'
 
 
 class LossCnt(nn.Module):
-    def __init__(self):
+    def __init__(self, root):
         super(LossCnt, self).__init__()
         
         # self.VGG19 = vgg19(pretrained=True)
