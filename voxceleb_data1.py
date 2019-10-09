@@ -39,7 +39,7 @@ def parse_args():
     parser.add_argument('-t','--txt_start', type=int, default=0)
     return parser.parse_args()
 config = parse_args()
-root = '/mnt/Data/lchen63'
+root = '/mnt/Data/lchen63/voxceleb'
 # root = '/data2/lchen63/voxceleb/'
 # root ='/home/cxu-serve/p1/lchen63/voxceleb/'
 # fa = face_alignment.FaceAlignment(face_alignment.LandmarksType._3D, flip_input=False)#,  device='cpu')
@@ -1020,7 +1020,7 @@ def file2folder(txt):
 
 # compute_RT("txt/train.pkl")
 
-clean_by_RT("train.pkl")
+# clean_by_RT("train.pkl")
 compose_front("train_clean.pkl")
 # for_3d_to_rgb()
 
