@@ -180,7 +180,7 @@ class Trainer():
 
                 loss_gen  =   loss_cnt +loss_adv + loss_pix  
 
-                loss_pix.backward()
+                loss_gen.backward()
                 self.opt_g.step()
 
                 #train the discriminator
