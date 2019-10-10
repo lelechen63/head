@@ -226,27 +226,27 @@ class Trainer():
                 # print("[{}/{}][{}/{}]  , loss_pix: {:.8f} , data time: {:.4f},  model time: {} second".format(epoch+1, config.max_epochs, step+1, num_steps_per_epoch, loss_pix.item(),  t1-t0,  t2 - t1))
 
 #                 if (step) % (int(num_steps_per_epoch  / 2 )) == 0 :
-                    
-                fake_store = fake_img.data.contiguous().view(config.batch_size,3,256,256)
-
-                torchvision.utils.save_image(fake_store,
-                    "{}/img_fake_{}.png".format(config.sample_dir,cc),normalize=True)
-
-                    # ref_store = reference_img.data.contiguous().view(config.batch_size,3,256,256)
-                    
-                    # torchvision.utils.save_image(ref_store,
-                    #     "{}/img_ref_{}.png".format(config.sample_dir,cc),normalize=True)
-
-                real_store = target_rgb.data.contiguous().view(config.batch_size ,3,256,256)
-                torchvision.utils.save_image(real_store,
-                    "{}/img_real_{}.png".format(config.sample_dir,cc),normalize=True)
-                cc += 1
-                if epoch% 5 == 0:
-                    torch.save(self.generator.state_dict(),
-                                "{}/vg_net_{}.pth"
-                                .format(config.model_dir, epoch))
-                 
                 t0 = time.time()
+            fake_store = fake_img.data.contiguous().view(config.batch_size,3,256,256)
+
+            torchvision.utils.save_image(fake_store,
+                "{}/img_fake_{}.png".format(config.sample_dir,cc),normalize=True)
+
+                # ref_store = reference_img.data.contiguous().view(config.batch_size,3,256,256)
+
+                # torchvision.utils.save_image(ref_store,
+                #     "{}/img_ref_{}.png".format(config.sample_dir,cc),normalize=True)
+
+            real_store = target_rgb.data.contiguous().view(config.batch_size ,3,256,256)
+            torchvision.utils.save_image(real_store,
+                "{}/img_real_{}.png".format(config.sample_dir,cc),normalize=True)
+            cc += 1
+            if epoch% 5 == 0:
+                torch.save(self.generator.state_dict(),
+                            "{}/vg_net_{}.pth"
+                            .format(config.model_dir, epoch))
+
+            
 
 def parse_args():
     parser = argparse.ArgumentParser()
