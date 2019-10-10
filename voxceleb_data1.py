@@ -937,7 +937,7 @@ def compose_front(pickle_file):
 
 
 def for_3d_to_rgb(): # based on front_rt.pkl, remove the videos which not contain ani video
-    _pickle_file = os.path.join(root, 'txt','front_rt2.pkl')
+    _pickle_file = os.path.join(root, 'txt','front_rt.pkl')
     _file = open(_pickle_file, "rb")
     data = pickle.load(_file)
     new_data = []
@@ -1020,8 +1020,8 @@ def file2folder(txt):
 
 # compute_RT("txt/train.pkl")
 
-clean_by_RT("train.pkl")
-compose_front("train_clean.pkl")
-# for_3d_to_rgb()
+# clean_by_RT("train.pkl")
+# compose_front("train_clean.pkl")
+for_3d_to_rgb()
 
 
