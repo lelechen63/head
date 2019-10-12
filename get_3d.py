@@ -47,7 +47,7 @@ def get_3d(bbb):
     _file.close()
     gg = len(data)
     print (len(data))
-    data = data[int(gg * 0.1 *bbb ); int(gg * 0.1 * (bbb + 1) ) ]
+    data = data[int(gg * 0.1 *bbb ): int(gg * 0.1 * (bbb + 1) ) ]
     for kk ,item in enumerate(data) :
         print (kk)
         
