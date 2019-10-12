@@ -42,7 +42,7 @@ def get_3d(bbb):
     # data = pickle._Unpickler(_file)
     # data.encoding = 'latin1'
     # data = data.load()
-    _file = open(os.path.join(root, 'txt',  "train_clean.pkl"), "rb")
+    _file = open(os.path.join(root, 'txt',  "front_rt.pkl"), "rb")
     data = pickle.load(_file)
     _file.close()
     gg = len(data)
