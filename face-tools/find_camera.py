@@ -15,11 +15,23 @@ import time
 res = 224
 import os
 import pickle
-root  = '/mnt/Data/lchen63/voxceleb/'
+# root  = '/mnt/Data/lchen63/voxceleb/'
 
 # root  = '/home/cxu-serve/p1/lchen63/voxceleb/'
 import shutil
 
+import argparse
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--b",
+                        type=int,
+                        default=0)
+    parser.add_argument("--root",
+                        type=str,
+                        default='/mnt/Data/lchen63/voxceleb/')
+    return parser.parse_args()
+config = parse_args()
+root = config.root
 def recover(rt):
     rots = []
     trans = []
@@ -330,12 +342,5 @@ def gg():
         #     break
 # demo()
 # gg()
-import argparse
-def parse_args():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--b",
-                        type=int,
-                        default=0)
-    return parser.parse_args()
-config = parse_args()
+
 get(config.b)
