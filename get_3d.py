@@ -58,6 +58,7 @@ def get_3d(bbb):
             print (video_path) 
             continue
         if os.path.exists(video_path[:-4] + '.obj'):
+            print ('-------')
             continue
         cap = cv2.VideoCapture(video_path)
         for i in range(target_id):
