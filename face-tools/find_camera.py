@@ -15,7 +15,9 @@ import time
 res = 224
 import os
 import pickle
-root  = '/home/cxu-serve/p1/lchen63/voxceleb/'
+root  = '/mnt/Data/lchen63/voxceleb/'
+
+# root  = '/home/cxu-serve/p1/lchen63/voxceleb/'
 import shutil
 
 def recover(rt):
@@ -146,7 +148,8 @@ def get(batch = 0 ):
     data = data.load()
     _file.close()
     flage = False
-    for k, item in enumerate(data[5000* batch:5000* (batch + 1)]):
+    print (len(data))
+    for k, item in enumerate(data[4000* batch:4000* (batch + 1)]):
         
         key_id = item[-1]
         # if  k == 5689:
@@ -154,7 +157,7 @@ def get(batch = 0 ):
 
         # if flage == False:
         #     continue
-        print ('++++++++++++++++++++++++++++++++%d'%(k + 5000* batch))
+        print ('++++++++++++++++++++++++++++++++%d'%(k + 4000* batch))
         video_path = os.path.join(root, 'unzip', item[0] + '.mp4') 
 
         reference_img_path = video_path[:-4] + '_%05d.png'%key_id
