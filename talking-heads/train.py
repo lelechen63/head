@@ -142,7 +142,7 @@ class Trainer():
 
                 # embed the reference frames 
                 dims = references.shape
-                print (dims)
+                # print (dims)
                 references = references.reshape( dims[0] * dims[1], dims[2], dims[3], dims[4]  )
                 # reference_frames = references[:,0,:,:,:]
                 # reference_lmark = references[:,1, :,:,:]
