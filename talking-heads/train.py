@@ -242,9 +242,9 @@ class Trainer():
                         "{}/img_fake_{}.png".format(config.sample_dir,cc),normalize=True)
 
                     references = references.reshape( config.batch_size, 4, dims[2], dims[3], dims[4]  )
-                    reference_frames = reference[:,0,:3,:,:].data.contiguous().view(config.batch_size,3,256,256)
+                    reference_frames = references[:,0,:3,:,:].data.contiguous().view(config.batch_size,3,256,256)
 
-                    reference_lmark = reference[:,0,3:,:,:].data.contiguous().view(config.batch_size,3,256,256)
+                    reference_lmark = references[:,0,3:,:,:].data.contiguous().view(config.batch_size,3,256,256)
                         # ref_store = reference_img.data.contiguous().view(config.batch_size,3,256,256)
                     torchvision.utils.save_image(reference_frames,
                         "{}/img_ref_{}.png".format(config.sample_dir,cc),normalize=True)
