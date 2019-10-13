@@ -225,9 +225,9 @@ class Trainer():
                 # if (step) % 10 == 0 :
 #                 print("[{}/{}][{}/{}]  ,  loss_disc: {:.8f},   loss_gen: {:.8f}   , loss_cnt: {:.8f}, data time: {:.4f},  model time: {} second".format(epoch+1, config.max_epochs, step+1, num_steps_per_epoch, loss_disc.item(),  loss_gen.item(), loss_cnt.item(),  t1-t0,  t2 - t1))
                 if not config.perceptual:
-                    loss_cnt = loss_adv 
+                    loss_cnt = loss_gen 
                 if not config.pixel:
-                    loss_pix = loss_adv
+                    loss_pix = loss_gen
                 print("[{}/{}][{}/{}]  ,  loss_disc: {:.8f},   loss_gen: {:.8f}  ,  loss_pix: {:.8f} , loss_cnt: {:.8f}, data time: {:.4f},  model time: {} second".format(epoch+1, config.max_epochs, step+1, num_steps_per_epoch, loss_disc.item(),  loss_gen.item(),loss_pix.item(), loss_cnt.item(),  t1-t0,  t2 - t1))
                 # print("[{}/{}][{}/{}]  , loss_pix: {:.8f} , data time: {:.4f},  model time: {} second".format(epoch+1, config.max_epochs, step+1, num_steps_per_epoch, loss_pix.item(),  t1-t0,  t2 - t1))
 
