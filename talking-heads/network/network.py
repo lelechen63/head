@@ -269,7 +269,7 @@ class  Lmark2img_Generator2(nn.Module):
         pad_type='reflect'
         self.model = []
         self.model += [Conv2dBlock(3, 64, 7, 1, 3,
-                                   norm=norm,
+                                   norm='in',
                                    activation=activ,
                                    pad_type=pad_type)]
         self.model += [Conv2dBlock(64, 128, 4, 2, 1,           # 128, 128, 128 
@@ -427,7 +427,6 @@ class Lmark2img_Discriminator(nn.Module):
         super(Lmark2img_Discriminator, self).__init__()
         if use_ani == False:
             self.conv1 = ResidualBlockDown(6, 64)
-        
         else:
             self.conv1 = ResidualBlockDown(9, 64)
         self.conv2 = ResidualBlockDown(64, 128)
