@@ -154,10 +154,10 @@ class Trainer():
 
                 # # Generate frame using landmark from target frame. (use landmark only )/ (use landmark + ani 3d)
                 # here we use lmark+3d and ani 3d
-                if config.use_ani:
-                    g_in = torch.cat([target_lmark, target_ani], 1)
-                else:
-                    g_in = target_lmark
+                # if config.use_ani:
+                g_in = torch.cat([target_lmark, target_ani], 1)
+                # else:
+                #     g_in = target_lmark
 
             
 
@@ -165,7 +165,7 @@ class Trainer():
                 
                 for p in self.discriminator.parameters():
                     p.requires_grad = False  # to avoid computation
-                fake_img  = self.generator( g_in, e_hat)
+                fake_img  = self.generator( target_ani,target_lmark, e_hat)
                 self.opt_g.zero_grad()
                 D_fake = self.discriminator(fake_img, g_in   )
 
@@ -191,7 +191,7 @@ class Trainer():
 
                 self.opt_d.zero_grad()
 
-                fake_img = self.generator( g_in, e_hat)
+                fake_img = self.generator( target_ani,target_lmark, e_hat)
                 
 
                 # train with real image
