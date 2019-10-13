@@ -274,7 +274,7 @@ def parse_args():
                         default=100)
     parser.add_argument("--pixel",
                         type=bool,
-                        default=True)
+                        default=False)
     parser.add_argument("--gan",
                         type=bool,
                         default=True)
