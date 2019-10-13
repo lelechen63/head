@@ -379,7 +379,7 @@ class  Lmark2img_Generator2(nn.Module):
         out = self.att1(out)
         out = self.in4_e(self.conv4(out))  # [B, 512, 16, 16]
         out = self.in5_e(self.conv5(out))  # [B, 512, 8, 8]
-        opose_featureut = self.in6_e(self.conv6(out))  # [B, 512, 4, 4]
+        pose_feature = self.in6_e(self.conv6(out))  # [B, 512, 4, 4]
 
         lmark_feature = self.lmark_encoder(lmark)
         feature = torch.cat([pose_feature, lmark_feature], 1)
