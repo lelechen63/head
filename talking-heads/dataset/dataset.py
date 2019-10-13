@@ -51,7 +51,7 @@ class Lmark2rgbDataset(Dataset):
         """
         self.train = train
         self.output_shape   = tuple([resolution, resolution])
-        self.num_frames = 1  
+        self.num_frames = 4  
         self.root  = dataset_dir     
         if self.train =='train':
             _file = open(os.path.join(dataset_dir, 'txt',  "front_rt2.pkl"), "rb")
