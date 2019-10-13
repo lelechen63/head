@@ -147,6 +147,7 @@ class Trainer():
                 # reference_frames = references[:,0,:,:,:]
                 # reference_lmark = references[:,1, :,:,:]
 
+                self.opt_g.zero_grad()
                 e_vectors = self.embedder(references).reshape(dims[0] , dims[1], -1)
 
                 e_hat = e_vectors.mean(dim = 1)
@@ -167,7 +168,7 @@ class Trainer():
                 for p in self.discriminator.parameters():
                     p.requires_grad = False  # to avoid computation
                 fake_img  = self.generator( target_ani,target_lmark, e_hat)
-                self.opt_g.zero_grad()
+                
                 D_fake = self.discriminator(fake_img, g_in   )
 
                 loss_adv = self.mse_loss_fn(D_fake, self.ones)
@@ -192,7 +193,7 @@ class Trainer():
 
                 self.opt_d.zero_grad()
 
-                fake_img = self.generator( target_ani,target_lmark, e_hat)
+                fake_img = self.generator( target_ani,target_lmark, e_hat.detach())
                 
 
                 # train with real image
@@ -239,10 +240,25 @@ class Trainer():
             torchvision.utils.save_image(fake_store,
                 "{}/img_fake_{}.png".format(config.sample_dir,cc),normalize=True)
 
-                # ref_store = reference_img.data.contiguous().view(config.batch_size,3,256,256)
+            references = references.reshape( config.batch_size, dims[0] / config.batch_size, dims[2], dims[3], dims[4]  )
+            reference_frames = reference[:,0,:3,:,:].data.contiguous().view(config.batch_size,3,256,256)
 
-                # torchvision.utils.save_image(ref_store,
-                #     "{}/img_ref_{}.png".format(config.sample_dir,cc),normalize=True)
+            reference_lmark = reference[:,0,3:,:,:].data.contiguous().view(config.batch_size,3,256,256)
+                # ref_store = reference_img.data.contiguous().view(config.batch_size,3,256,256)
+            torchvision.utils.save_image(reference_frames,
+                "{}/img_ref_{}.png".format(config.sample_dir,cc),normalize=True)
+            
+            torchvision.utils.save_image(reference_lmark,
+                "{}/lmark_ref_{}.png".format(config.sample_dir,cc),normalize=True)
+            
+
+            target_lmark = target_lmark.data.contiguous().view(config.batch_size ,3,256,256)
+            torchvision.utils.save_image(target_lmark,
+                "{}/lmark_real_{}.png".format(config.sample_dir,cc),normalize=True)
+
+            target_ani = target_ani.data.contiguous().view(config.batch_size ,3,256,256)
+            torchvision.utils.save_image(target_ani,
+                "{}/ani_real_{}.png".format(config.sample_dir,cc),normalize=True)
 
             real_store = target_rgb.data.contiguous().view(config.batch_size ,3,256,256)
             torchvision.utils.save_image(real_store,
