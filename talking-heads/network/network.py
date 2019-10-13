@@ -305,11 +305,6 @@ class  Lmark2img_Generator2(nn.Module):
         self.lmark_encoder = nn.Sequential(*self.model)
 
 
-        self.model = []
-
-        
-        self.model += [ResBlocks(2, 512, norm  = 'adain', activation=activ, pad_type='reflect')]
-        self.adainlayers = nn.Sequential(*self.model)
         self.bottle =  nn.Sequential(*[Conv2dBlock(1024, 512, 3, 1, 1,           # 512 4
                                        norm= 'in',
                                        activation=activ,
@@ -319,6 +314,10 @@ class  Lmark2img_Generator2(nn.Module):
 
         
         self.model =[]
+
+        
+        self.model += [ResBlocks(2, 512, norm  = 'adain', activation=activ, pad_type='reflect')]
+        
         self.model += [nn.Upsample(scale_factor=2),
                         Conv2dBlock(512, 512, 5, 1, 2,
                                     norm='in',
@@ -360,7 +359,7 @@ class  Lmark2img_Generator2(nn.Module):
 
 
         self.mlp = MLP(512,
-                       get_num_adain_params(self.adainlayers),
+                       decoder(self.adainlayers),
                        256,
                        3,
                        norm='none',
@@ -380,20 +379,16 @@ class  Lmark2img_Generator2(nn.Module):
         out = self.att1(out)
         out = self.in4_e(self.conv4(out))  # [B, 512, 16, 16]
         out = self.in5_e(self.conv5(out))  # [B, 512, 8, 8]
-        out = self.in6_e(self.conv6(out))  # [B, 512, 4, 4]
-    
-        # Decode
-        adain_params = self.mlp(e)
-        assign_adain_params(adain_params, self.adainlayers)
-
-        pose_feature = self.adainlayers(out)
+        opose_featureut = self.in6_e(self.conv6(out))  # [B, 512, 4, 4]
 
         lmark_feature = self.lmark_encoder(lmark)
-
         feature = torch.cat([pose_feature, lmark_feature], 1)
-
         feature = self.bottle(feature)
 
+
+        # Decode
+        adain_params = self.mlp(e)
+        assign_adain_params(adain_params, self.decoder)
 
         image = self.decoder(feature)
         return image
