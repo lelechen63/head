@@ -53,7 +53,7 @@ def multi2single(model_path, id):
 class Trainer():
     def __init__(self, config):
 
-        self.generator = Lmark2img_Generator2(use_ani= config.use_ani)
+        self.generator = Lmark2img_Generator2()
         self.discriminator = Lmark2img_Discriminator(use_ani= config.use_ani)
         self.embedder = Embedder()
 
@@ -279,6 +279,9 @@ def parse_args():
     parser.add_argument("--perceptual",
                         type=bool,
                         default=True)
+    parser.add_argument("--use_ani",
+                        type=bool,
+                        default=True)
     parser.add_argument("--batch_size",
                         type=int,
                         default=1)
@@ -305,7 +308,7 @@ def parse_args():
                         # default='/media/lele/DATA/lrw/data2/sample/lstm_gan')
     parser.add_argument("--model_name",
                         type=str,
-                        default="lmark2rgb_single_base2_all_loss_gan")
+                        default="base")
                         # default="/mnt/ssd0/dat/lchen63/grid/pickle/")
                         # default = '/media/lele/DATA/lrw/data2/pickle')
     parser.add_argument('--device_ids', type=str, default='0')
