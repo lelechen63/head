@@ -128,7 +128,7 @@ class  Lmark2img_Generator(nn.Module):
     def __init__(self):
         super( Lmark2img_Generator, self).__init__()
 
-        self.conv1 = ResidualBlockDown(3, 64)            #(64,128,128)
+        self.conv1 = ResidualBlockDown(6, 64)            #(64,128,128)
         self.in1_e = nn.InstanceNorm2d(64, affine=True)
 
         self.conv2 = ResidualBlockDown(64, 128)      #(128,64,64)
@@ -201,9 +201,9 @@ class  Lmark2img_Generator(nn.Module):
 
         # self.apply(weights_init)
         
-    def forward(self, y, e):
+    def forward(self,  ani, lmark, e):
 
-        out = y  # [B, 3, 256, 256]
+        out = torch.cat([ani, lmark], 1)  # [B, 6, 256, 256]
 
       
         # Encode
@@ -355,8 +355,6 @@ class  Lmark2img_Generator2(nn.Module):
         self.decoder = nn.Sequential(*self.model)
 
 
-        # self.apply(weights_init)
-
 
         self.mlp = MLP(512,
                        get_num_adain_params(self.decoder),
@@ -365,7 +363,6 @@ class  Lmark2img_Generator2(nn.Module):
                        norm='none',
                        activ='relu')
 
-        # self.apply(weights_init)
         
     def forward(self, ani, lmark, e):
 
@@ -384,8 +381,6 @@ class  Lmark2img_Generator2(nn.Module):
         lmark_feature = self.lmark_encoder(lmark)
         feature = torch.cat([pose_feature, lmark_feature], 1)
         feature = self.bottle(feature)
-
-
         # Decode
         adain_params = self.mlp(e)
         assign_adain_params(adain_params, self.decoder)

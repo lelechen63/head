@@ -12,7 +12,7 @@ import numpy as np
 from collections import OrderedDict
 import argparse
 from dataset.dataset import  Lmark2rgbDataset 
-from network.network import Embedder ,Lmark2img_Generator2 , Lmark2img_Discriminator
+from network.network import Embedder ,Lmark2img_Generator , Lmark2img_Discriminator
 from torch.nn import init
 from network.loss import LossCnt
 from logger import Logger
@@ -53,7 +53,7 @@ def multi2single(model_path, id):
 class Trainer():
     def __init__(self, config):
 
-        self.generator = Lmark2img_Generator2()
+        self.generator = Lmark2img_Generator()
         self.discriminator = Lmark2img_Discriminator(use_ani= config.use_ani)
         self.embedder = Embedder()
 
