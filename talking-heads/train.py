@@ -176,8 +176,20 @@ class Trainer():
                     loss_cnt = self.loss_cnt(target_rgb, fake_img).mean()
                 if config.pixel:
                     loss_pix = self.l1_loss_fn(fake_img, target_rgb)
+                
+                if config.perceptual :
+                    if  config.pixel:
+                        loss_gen = loss_adv + loss_cnt + loss_pix
+                    else:
+                        loss_gen = loss_adv + loss_cnt_G
+                else:
+                    if  config.pixel:
+                        loss_gen = loss_adv  + loss_pix
+                    else:
+                        loss_gen = loss_adv 
 
-                loss_gen = loss_adv
+
+                
                 if config.perceptual:
                     loss_gen += loss_cnt
                 if config.pixel:
