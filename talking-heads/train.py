@@ -235,39 +235,40 @@ class Trainer():
 
 #                 if (step) % (int(num_steps_per_epoch  / 2 )) == 0 :
                 t0 = time.time()
-            fake_store = fake_img.data.contiguous().view(config.batch_size,3,256,256)
+                if epoch == cc:
+                    fake_store = fake_img.data.contiguous().view(config.batch_size,3,256,256)
 
-            torchvision.utils.save_image(fake_store,
-                "{}/img_fake_{}.png".format(config.sample_dir,cc),normalize=True)
+                    torchvision.utils.save_image(fake_store,
+                        "{}/img_fake_{}.png".format(config.sample_dir,cc),normalize=True)
 
-            references = references.reshape( config.batch_size, dims[0] / config.batch_size, dims[2], dims[3], dims[4]  )
-            reference_frames = reference[:,0,:3,:,:].data.contiguous().view(config.batch_size,3,256,256)
+                    references = references.reshape( config.batch_size, dims[0] / config.batch_size, dims[2], dims[3], dims[4]  )
+                    reference_frames = reference[:,0,:3,:,:].data.contiguous().view(config.batch_size,3,256,256)
 
-            reference_lmark = reference[:,0,3:,:,:].data.contiguous().view(config.batch_size,3,256,256)
-                # ref_store = reference_img.data.contiguous().view(config.batch_size,3,256,256)
-            torchvision.utils.save_image(reference_frames,
-                "{}/img_ref_{}.png".format(config.sample_dir,cc),normalize=True)
-            
-            torchvision.utils.save_image(reference_lmark,
-                "{}/lmark_ref_{}.png".format(config.sample_dir,cc),normalize=True)
-            
+                    reference_lmark = reference[:,0,3:,:,:].data.contiguous().view(config.batch_size,3,256,256)
+                        # ref_store = reference_img.data.contiguous().view(config.batch_size,3,256,256)
+                    torchvision.utils.save_image(reference_frames,
+                        "{}/img_ref_{}.png".format(config.sample_dir,cc),normalize=True)
+                    
+                    torchvision.utils.save_image(reference_lmark,
+                        "{}/lmark_ref_{}.png".format(config.sample_dir,cc),normalize=True)
+                    
 
-            target_lmark = target_lmark.data.contiguous().view(config.batch_size ,3,256,256)
-            torchvision.utils.save_image(target_lmark,
-                "{}/lmark_real_{}.png".format(config.sample_dir,cc),normalize=True)
+                    target_lmark = target_lmark.data.contiguous().view(config.batch_size ,3,256,256)
+                    torchvision.utils.save_image(target_lmark,
+                        "{}/lmark_real_{}.png".format(config.sample_dir,cc),normalize=True)
 
-            target_ani = target_ani.data.contiguous().view(config.batch_size ,3,256,256)
-            torchvision.utils.save_image(target_ani,
-                "{}/ani_real_{}.png".format(config.sample_dir,cc),normalize=True)
+                    target_ani = target_ani.data.contiguous().view(config.batch_size ,3,256,256)
+                    torchvision.utils.save_image(target_ani,
+                        "{}/ani_real_{}.png".format(config.sample_dir,cc),normalize=True)
 
-            real_store = target_rgb.data.contiguous().view(config.batch_size ,3,256,256)
-            torchvision.utils.save_image(real_store,
-                "{}/img_real_{}.png".format(config.sample_dir,cc),normalize=True)
-            cc += 1
-            if epoch% 5 == 0:
-                torch.save(self.generator.state_dict(),
-                            "{}/vg_net_{}.pth"
-                            .format(config.model_dir, epoch))
+                    real_store = target_rgb.data.contiguous().view(config.batch_size ,3,256,256)
+                    torchvision.utils.save_image(real_store,
+                        "{}/img_real_{}.png".format(config.sample_dir,cc),normalize=True)
+                    cc += 1
+                if epoch% 5 == 0:
+                    torch.save(self.generator.state_dict(),
+                                "{}/vg_net_{}.pth"
+                                .format(config.model_dir, epoch))
 
             
 
