@@ -359,7 +359,7 @@ class  Lmark2img_Generator2(nn.Module):
 
 
         self.mlp = MLP(512,
-                       decoder(self.adainlayers),
+                       get_num_adain_params(self.decoder),
                        256,
                        3,
                        norm='none',
