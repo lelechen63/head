@@ -109,7 +109,6 @@ class Lmark2rgbDataset(Dataset):
             lmark_t = lmark[t]
             lmark_rgb = plot_landmarks( lmark_t)
             # lmark_rgb = np.array(lmark_rgb) 
-            print (self.output_shape)
             # resize 224 to 256
             rgb_t  = cv2.resize(rgb_t, self.output_shape)
             lmark_rgb  = cv2.resize(lmark_rgb, self.output_shape)
