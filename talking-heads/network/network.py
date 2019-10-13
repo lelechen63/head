@@ -309,7 +309,7 @@ class  Lmark2img_Generator2(nn.Module):
 
         
         self.model += [ResBlocks(2, 512, norm  = 'adain', activation=activ, pad_type='reflect')]
-
+        self.adainlayers = nn.Sequential(*self.model)
         self.bottle =  nn.Sequential(*[Conv2dBlock(1024, 512, 3, 1, 1,           # 512 4
                                        norm= 'in',
                                        activation=activ,
@@ -317,7 +317,7 @@ class  Lmark2img_Generator2(nn.Module):
 
         )
 
-        self.adainlayers = nn.Sequential(*self.model)
+        
         self.model =[]
         self.model += [nn.Upsample(scale_factor=2),
                         Conv2dBlock(512, 512, 5, 1, 2,
@@ -360,7 +360,7 @@ class  Lmark2img_Generator2(nn.Module):
 
 
         self.mlp = MLP(512,
-                       get_num_adain_params(self.decoder),
+                       get_num_adain_params(self.adainlayers),
                        256,
                        3,
                        norm='none',
