@@ -181,20 +181,13 @@ class Trainer():
                     if  config.pixel:
                         loss_gen = loss_adv + loss_cnt + loss_pix
                     else:
-                        loss_gen = loss_adv + loss_cnt_G
+                        loss_gen = loss_adv + loss_cnt
                 else:
                     if  config.pixel:
                         loss_gen = loss_adv  + loss_pix
                     else:
                         loss_gen = loss_adv 
 
-
-                
-                if config.perceptual:
-                    loss_gen += loss_cnt
-                if config.pixel:
-
-                    loss_gen +=  loss_pix  
 
                 loss_gen.backward()
                 self.opt_g.step()
