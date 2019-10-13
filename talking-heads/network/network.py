@@ -59,6 +59,7 @@ class Embedder(nn.Module):
         # out = torch.cat((x, y), dim=1)  # [BxK, 6, 256, 256]
 
         # Encode
+        out = x
         out = (self.conv1(out))  # [BxK, 64, 128, 128]
         out = (self.conv2(out))  # [BxK, 128, 64, 64]
         out = (self.conv3(out))  # [BxK, 256, 32, 32]
