@@ -13,7 +13,7 @@ import PIL
 import cv2
 import matplotlib
 
-matplotlib.use('pdf')
+# matplotlib.use('pdf')
 import matplotlib.pyplot as plt
 
 
@@ -39,7 +39,7 @@ from PIL import Image
 class Lmark2rgbDataset(Dataset):
     """ Dataset object used to access the pre-processed VoxCelebDataset """
 
-    def __init__(self, dataset_dir, resolution,  train = 'train'):
+    def __init__(self, dataset_dir, resolution = 256,  train = 'train'):
         """
         Instantiates the Dataset.
 
@@ -51,7 +51,7 @@ class Lmark2rgbDataset(Dataset):
         """
         self.train = train
         self.output_shape   = tuple([resolution, resolution])
-        self.num_frames = 4  
+        self.num_frames = 1  
         self.root  = dataset_dir     
         if self.train =='train':
             _file = open(os.path.join(dataset_dir, 'txt',  "front_rt2.pkl"), "rb")
@@ -109,7 +109,7 @@ class Lmark2rgbDataset(Dataset):
             lmark_t = lmark[t]
             lmark_rgb = plot_landmarks( lmark_t)
             # lmark_rgb = np.array(lmark_rgb) 
-
+            print (self.output_shape)
             # resize 224 to 256
             rgb_t  = cv2.resize(rgb_t, self.output_shape)
             lmark_rgb  = cv2.resize(lmark_rgb, self.output_shape)
@@ -119,7 +119,7 @@ class Lmark2rgbDataset(Dataset):
             lmark_rgb = self.transform(lmark_rgb)
 
 
-            reference_frames.append(torch.stack([rgb_t, lmark_rgb]))  # (6, 256, 256)   
+            reference_frames.append(torch.cat([rgb_t, lmark_rgb],0))  # (6, 256, 256)   
 
         reference_frames = torch.stack(reference_frames)
         ############################################################################
@@ -146,7 +146,7 @@ class Lmark2rgbDataset(Dataset):
         # reference_ani = self.transform(reference_ani)
 
         target_lmark = plot_landmarks(target_lmark)
-        target_lmark = np.array(target_lmark) 
+        # target_lmark = np.array(target_lmark) 
         target_lmark  = cv2.resize(target_lmark, self.output_shape)
         target_lmark = self.transform(target_lmark)
 
@@ -199,6 +199,7 @@ def plot_landmarks1( landmarks):
     fig.canvas.draw()
     data = PIL.Image.frombuffer('RGB', fig.canvas.get_width_height(), fig.canvas.tostring_rgb(), 'raw', 'RGB', 0, 1)
     plt.close(fig)
+    # print ('++++++++++++++++++++++++++++++++')
     return data
 
 
@@ -228,24 +229,24 @@ def plot_landmarks( landmarks):
     # print (points.shape)
 
 
-    blank_image = np.zeros((224,224,3), np.uint8)
+    blank_image = np.zeros((224,224,3), np.uint8) + 128
 
     # cv2.polylines(blank_image, np.int32([points]), True, (0,255,255), 1)
 
-    cv2.polylines(blank_image, np.int32([landmarks[0:17]]) , True, (0,255,255), 1)
+    cv2.polylines(blank_image, np.int32([landmarks[0:17]]) , True, (0,255,255), 2)
  
-    cv2.polylines(blank_image,  np.int32([landmarks[17:22]]), True, (255,0,255), 1)
+    cv2.polylines(blank_image,  np.int32([landmarks[17:22]]), True, (255,0,255), 2)
 
-    cv2.polylines(blank_image, np.int32([landmarks[22:27]]) , True, (255,0,255), 1)
+    cv2.polylines(blank_image, np.int32([landmarks[22:27]]) , True, (255,0,255), 2)
 
-    cv2.polylines(blank_image, np.int32([landmarks[27:31]]) , True, (255,255, 0), 1)
+    cv2.polylines(blank_image, np.int32([landmarks[27:31]]) , True, (255,255, 0), 2)
 
-    cv2.polylines(blank_image, np.int32([landmarks[31:36]]) , True, (255,255, 0), 1)
+    cv2.polylines(blank_image, np.int32([landmarks[31:36]]) , True, (255,255, 0), 2)
 
-    cv2.polylines(blank_image, np.int32([landmarks[36:42]]) , True, (255,0, 0), 1)
-    cv2.polylines(blank_image, np.int32([landmarks[42:48]]) , True, (255,0, 0), 1)
+    cv2.polylines(blank_image, np.int32([landmarks[36:42]]) , True, (255,0, 0), 2)
+    cv2.polylines(blank_image, np.int32([landmarks[42:48]]) , True, (255,0, 0), 2)
 
-    cv2.polylines(blank_image, np.int32([landmarks[48:60]]) , True, (0, 0, 255), 1)
+    cv2.polylines(blank_image, np.int32([landmarks[48:60]]) , True, (0, 0, 255), 2)
 
 
 
@@ -262,7 +263,7 @@ def plot_landmarks( landmarks):
 
 
 # import time
-# dataset = Lmark2rgbDataset('/home/cxu-serve/p1/lchen63/voxceleb/', 'train')
+# dataset = Lmark2rgbDataset('/home/cxu-serve/p1/lchen63/voxceleb/', 256,  'train')
 # data_loader = torch.utils.data.DataLoader(dataset,
 #                           batch_size=1,
 #                           num_workers=1,
@@ -280,13 +281,13 @@ def plot_landmarks( landmarks):
 
 #     print (gg['reference_frames'].shape)
 #     print (gg['target_lmark'].shape)
-#     print (gg['reference_frames'][:,0,0].shape)
-#     inputs = [gg['target_lmark'], gg['target_rgb'], gg['target_ani'], gg['reference_frames'][:,0,0]]
+#     print (gg['reference_frames'].shape)
+#     inputs = [gg['target_lmark'], gg['target_rgb'], gg['target_ani'], gg['reference_frames'][:,0,1]]
 #     fake_im = torch.stack(inputs, dim = 1)
 #     fake_store = fake_im.data.contiguous().view(4*1,3,256,256)
 #     torchvision.utils.save_image(fake_store, 
 #         "./tmp/vis_%05d.png"%step,normalize=True)
     
-#     if step == 10:
+#     if step == 1:
 #         break
    

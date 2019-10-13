@@ -142,11 +142,11 @@ class Trainer():
 
                 # embed the reference frames 
                 dims = references.shape
-                references = references.reshape( dims[0] * dims[1], dims[2], dims[3], dims[4], dims[5]  )
-                reference_frames = references[:,0,:,:,:]
-                reference_lmark = references[:,1, :,:,:]
+                references = references.reshape( dims[0] * dims[1], dims[2], dims[3], dims[4]  )
+                # reference_frames = references[:,0,:,:,:]
+                # reference_lmark = references[:,1, :,:,:]
 
-                e_vectors = self.embedder(reference_frames , reference_lmark).reshape(dims[0] , dims[1], -1)
+                e_vectors = self.embedder(references).reshape(dims[0] , dims[1], -1)
 
                 e_hat = e_vectors.mean(dim = 1)
 
@@ -170,15 +170,17 @@ class Trainer():
                 D_fake = self.discriminator(fake_img, g_in   )
 
                 loss_adv = self.mse_loss_fn(D_fake, self.ones)
-                loss_cnt = self.loss_cnt(target_rgb, fake_img).mean()
+                if config.perceptual:
+                    loss_cnt = self.loss_cnt(target_rgb, fake_img).mean()
+                if config.pixel:
+                    loss_pix = self.l1_loss_fn(fake_img, target_rgb)
 
-                loss_pix = self.l1_loss_fn(fake_img, target_rgb)
+                loss_gen = loss_adv
+                if config.perceptual:
+                    loss_gen += loss_cnt
+                if config.pixel:
 
-                # print (loss_pix.shape)
-
-                # print (loss_cnt.shape)
-
-                loss_gen  =   loss_cnt +loss_adv + loss_pix  
+                    loss_gen +=  loss_pix  
 
                 loss_gen.backward()
                 self.opt_g.step()
@@ -210,18 +212,21 @@ class Trainer():
                 loss_disc.backward()
                 self.opt_d.step()
 
-
-    
                 logger.scalar_summary('loss_disc', loss_disc.item(),epoch * num_steps_per_epoch + step+1)
                 logger.scalar_summary('loss_gen', loss_gen.item(),epoch * num_steps_per_epoch + step+1)
-                logger.scalar_summary('loss_pix', loss_pix.item(),epoch * num_steps_per_epoch + step+1)
-                logger.scalar_summary('loss_cnt_G', loss_cnt.item(),epoch * num_steps_per_epoch + step+1)
+                if config.pixel:
+                    logger.scalar_summary('loss_pix', loss_pix.item(),epoch * num_steps_per_epoch + step+1)
+                if config.perceptual:
+                    logger.scalar_summary('loss_cnt_G', loss_cnt.item(),epoch * num_steps_per_epoch + step+1)
                 logger.scalar_summary('loss_ani', loss_ani.item(),epoch * num_steps_per_epoch + step+1)
                 t2 = time.time()
                 
                 # if (step) % 10 == 0 :
 #                 print("[{}/{}][{}/{}]  ,  loss_disc: {:.8f},   loss_gen: {:.8f}   , loss_cnt: {:.8f}, data time: {:.4f},  model time: {} second".format(epoch+1, config.max_epochs, step+1, num_steps_per_epoch, loss_disc.item(),  loss_gen.item(), loss_cnt.item(),  t1-t0,  t2 - t1))
-
+                if not config.perceptual:
+                    loss_cnt = loss_adv 
+                if not config.pixel:
+                    loss_pix = loss_adv
                 print("[{}/{}][{}/{}]  ,  loss_disc: {:.8f},   loss_gen: {:.8f}  ,  loss_pix: {:.8f} , loss_cnt: {:.8f}, data time: {:.4f},  model time: {} second".format(epoch+1, config.max_epochs, step+1, num_steps_per_epoch, loss_disc.item(),  loss_gen.item(),loss_pix.item(), loss_cnt.item(),  t1-t0,  t2 - t1))
                 # print("[{}/{}][{}/{}]  , loss_pix: {:.8f} , data time: {:.4f},  model time: {} second".format(epoch+1, config.max_epochs, step+1, num_steps_per_epoch, loss_pix.item(),  t1-t0,  t2 - t1))
 
@@ -265,7 +270,13 @@ def parse_args():
     parser.add_argument("--lambda1",
                         type=int,
                         default=100)
-    parser.add_argument("--use_ani",
+    parser.add_argument("--pixel",
+                        type=bool,
+                        default=True)
+    parser.add_argument("--gan",
+                        type=bool,
+                        default=True)
+    parser.add_argument("--perceptual",
                         type=bool,
                         default=True)
     parser.add_argument("--batch_size",

@@ -52,11 +52,11 @@ class Embedder(nn.Module):
         # self.apply(weights_init)
        
 
-    def forward(self, x, y):   #(x: img, y: lmark)
-        assert x.dim() == 4 and x.shape[1] == 3, "Both x and y must be tensors with shape [BxK, 3, W, H]."
-        assert x.shape == y.shape, "Both x and y must be tensors with shape [BxK, 3, W, H]."
-        # Concatenate x & y
-        out = torch.cat((x, y), dim=1)  # [BxK, 6, 256, 256]
+    def forward(self, x):   #(x: img, y: lmark)
+        # assert x.dim() == 4 and x.shape[1] == 3, "Both x and y must be tensors with shape [BxK, 3, W, H]."
+        # assert x.shape == y.shape, "Both x and y must be tensors with shape [BxK, 3, W, H]."
+        # # Concatenate x & y
+        # out = torch.cat((x, y), dim=1)  # [BxK, 6, 256, 256]
 
         # Encode
         out = (self.conv1(out))  # [BxK, 64, 128, 128]
@@ -107,6 +107,8 @@ class MLP(nn.Module):
         return self.model(x.view(x.size(0), -1))
 
 
+
+
 class  Lmark2img_Generator(nn.Module):
     ADAIN_LAYERS = OrderedDict([
         ('res1', (512, 512)),
@@ -122,153 +124,10 @@ class  Lmark2img_Generator(nn.Module):
         ('deconv1', (64, 32))
     ])
 
-    def __init__(self, use_ani = True):
+    def __init__(self):
         super( Lmark2img_Generator, self).__init__()
-        # projection layer
-        self.PSI_PORTIONS, self.psi_length = self.define_psi_slices()
-        self.projection = nn.Parameter(torch.rand(self.psi_length, 512).normal_(0.0, 0.02))
 
-        # encoding layers
-        if use_ani == True:
-            self.conv1 = ResidualBlockDown(6, 64)            #(64,128,128)
-        else:
-            self.conv1 = ResidualBlockDown(3, 64)            #(64,128,128)
-        self.in1_e = nn.InstanceNorm2d(64, affine=True)
-
-        self.conv2 = ResidualBlockDown(64, 128)      #(128,64,64)
-        self.in2_e = nn.InstanceNorm2d(128, affine=True)
-
-        self.conv3 = ResidualBlockDown(128, 256)      #(256,32,32)
-        self.in3_e = nn.InstanceNorm2d(256, affine=True)
-
-        self.att1 = SelfAttention(256)
-
-        self.conv4 = ResidualBlockDown(256, 512)        #(512,16,16)
-        self.in4_e = nn.InstanceNorm2d(512, affine=True)
-
-        self.conv5 = ResidualBlockDown(512, 512)        #(512,8,8)
-        self.in5_e = nn.InstanceNorm2d(512, affine=True)
-
-        self.conv6 = ResidualBlockDown(512, 512)        #(512,4,4)
-        self.in6_e = nn.InstanceNorm2d(512, affine=True)
-
-        # residual layers
-        self.res1 = AdaptiveResidualBlock(512)
-        self.res2 = AdaptiveResidualBlock(512)
-        self.res3 = AdaptiveResidualBlock(512)
-        self.res4 = AdaptiveResidualBlock(512)
-        self.res5 = AdaptiveResidualBlock(512)
-
-        # decoding layers
-        self.deconv6 = AdaptiveResidualBlockUp(512, 512, upsample=2)
-        self.in6_d = nn.InstanceNorm2d(512, affine=True)
-
-        self.deconv5 = AdaptiveResidualBlockUp(512, 512, upsample=2)
-        self.in5_d = nn.InstanceNorm2d(512, affine=True)
-
-        self.deconv4 = AdaptiveResidualBlockUp(512, 256, upsample=2)
-        self.in4_d = nn.InstanceNorm2d(256, affine=True)
-
-        self.deconv3 = AdaptiveResidualBlockUp(256, 128, upsample=2)
-        self.in3_d = nn.InstanceNorm2d(128, affine=True)
-
-        self.att2 = SelfAttention(128)
-
-        self.deconv2 = AdaptiveResidualBlockUp(128, 64, upsample=2)
-        self.in2_d = nn.InstanceNorm2d(64, affine=True)
-
-        self.deconv1 = AdaptiveResidualBlockUp(64, 32, upsample=2)
-        self.in1_d = nn.InstanceNorm2d(32, affine=True)
-
-        self.last_conv  = nn.Conv2d(32, 3, 1, 1)
-        self.activate = nn.Tanh()
-
-        # self.apply(weights_init)
-
-
-        
-    def forward(self, y, e):
-
-        out = y  # [B, 6, 256, 256]
-
-        # Calculate psi_hat parameters
-        P = self.projection.unsqueeze(0)
-        P = P.expand(e.shape[0], P.shape[1], P.shape[2])
-        psi_hat = torch.bmm(P, e.unsqueeze(2)).squeeze(2)
-
-        # Encode
-        out = self.in1_e(self.conv1(out))  # [B, 64, 128, 128]
-        out = self.in2_e(self.conv2(out))  # [B, 128, 64, 64]
-        out = self.in3_e(self.conv3(out))  # [B, 256, 32, 32]
-        out = self.att1(out)
-        out = self.in4_e(self.conv4(out))  # [B, 512, 16, 16]
-        out = self.in5_e(self.conv5(out))  # [B, 512, 8, 8]
-        out = self.in6_e(self.conv6(out))  # [B, 512, 4, 4]
-
-        # Residual layers
-        out = self.res1(out, *self.slice_psi(psi_hat, 'res1'))
-        out = self.res2(out, *self.slice_psi(psi_hat, 'res2'))
-        out = self.res3(out, *self.slice_psi(psi_hat, 'res3'))
-        out = self.res4(out, *self.slice_psi(psi_hat, 'res4'))
-        out = self.res5(out, *self.slice_psi(psi_hat, 'res5'))
-
-        # Decode
-        out = self.in6_d(self.deconv6(out, *self.slice_psi(psi_hat, 'deconv6')))  # [B, 512, 4, 4]
-        out = self.in5_d(self.deconv5(out, *self.slice_psi(psi_hat, 'deconv5')))  # [B, 512, 16, 16]
-        out = self.in4_d(self.deconv4(out, *self.slice_psi(psi_hat, 'deconv4')))  # [B, 256, 32, 32]
-        out = self.in3_d(self.deconv3(out, *self.slice_psi(psi_hat, 'deconv3')))  # [B, 128, 64, 64]
-        out = self.att2(out)
-        out = self.in2_d(self.deconv2(out, *self.slice_psi(psi_hat, 'deconv2')))  # [B, 64, 128, 128]
-        out = self.in1_d(self.deconv1(out, *self.slice_psi(psi_hat, 'deconv1')))  # [B, 32, 256, 256]
-        out = self.last_conv(out)
-        out = self.activate(out)
-
-        return out
-
-    def slice_psi(self, psi, portion):
-        idx0, idx1 = self.PSI_PORTIONS[portion]
-        len1, len2 = self.ADAIN_LAYERS[portion]
-        aux = psi[:, idx0:idx1].unsqueeze(-1)
-        mean1, std1 = aux[:, 0:len1], aux[:, len1:2 * len1]
-        mean2, std2 = aux[:, 2 * len1:2 * len1 + len2], aux[:, 2 * len1 + len2:]
-        return mean1, std1, mean2, std2
-
-    def define_psi_slices(self):
-        out = {}
-        d = self.ADAIN_LAYERS
-        start_idx, end_idx = 0, 0
-        for layer in d:
-            end_idx = start_idx + d[layer][0] * 2 + d[layer][1] * 2
-            out[layer] = (start_idx, end_idx)
-            start_idx = end_idx
-
-        return out, end_idx
-
-
-
-class  Lmark2img_Generator2(nn.Module):
-    ADAIN_LAYERS = OrderedDict([
-        ('res1', (512, 512)),
-        ('res2', (512, 512)),
-        ('res3', (512, 512)),
-        ('res4', (512, 512)),
-        ('res5', (512, 512)),
-        ('deconv6', (512, 512)),
-        ('deconv5', (512, 512)),
-        ('deconv4', (512, 256)),
-        ('deconv3', (256, 128)),
-        ('deconv2', (128, 64)),
-        ('deconv1', (64, 32))
-    ])
-
-    def __init__(self, use_ani = True):
-        super( Lmark2img_Generator2, self).__init__()
-
-        # encoding layers
-        if use_ani == True:
-            self.conv1 = ResidualBlockDown(6, 64)            #(64,128,128)
-        else:
-            self.conv1 = ResidualBlockDown(3, 64)            #(64,128,128)
+        self.conv1 = ResidualBlockDown(3, 64)            #(64,128,128)
         self.in1_e = nn.InstanceNorm2d(64, affine=True)
 
         self.conv2 = ResidualBlockDown(64, 128)      #(128,64,64)
@@ -343,7 +202,7 @@ class  Lmark2img_Generator2(nn.Module):
         
     def forward(self, y, e):
 
-        out = y  # [B, 6, 256, 256]
+        out = y  # [B, 3, 256, 256]
 
       
         # Encode
@@ -362,6 +221,181 @@ class  Lmark2img_Generator2(nn.Module):
         image = self.decoder(out)
         return image
 
+
+
+
+
+class  Lmark2img_Generator2(nn.Module):
+    ADAIN_LAYERS = OrderedDict([
+        ('res1', (512, 512)),
+        ('res2', (512, 512)),
+        ('res3', (512, 512)),
+        ('res4', (512, 512)),
+        ('res5', (512, 512)),
+        ('deconv6', (512, 512)),
+        ('deconv5', (512, 512)),
+        ('deconv4', (512, 256)),
+        ('deconv3', (256, 128)),
+        ('deconv2', (128, 64)),
+        ('deconv1', (64, 32))
+    ])
+
+    def __init__(self):
+        super( Lmark2img_Generator2, self).__init__()
+
+        # encoding layers
+       
+        self.conv1 = ResidualBlockDown(3, 64)            #(64,128,128)
+        self.in1_e = nn.InstanceNorm2d(64, affine=True)
+
+        self.conv2 = ResidualBlockDown(64, 128)      #(128,64,64)
+        self.in2_e = nn.InstanceNorm2d(128, affine=True)
+
+        self.conv3 = ResidualBlockDown(128, 256)      #(256,32,32)
+        self.in3_e = nn.InstanceNorm2d(256, affine=True)
+
+        self.att1 = SelfAttention(256)
+
+        self.conv4 = ResidualBlockDown(256, 512)        #(512,16,16)
+        self.in4_e = nn.InstanceNorm2d(512, affine=True)
+
+        self.conv5 = ResidualBlockDown(512, 512)        #(512,8,8)
+        self.in5_e = nn.InstanceNorm2d(512, affine=True)
+
+        self.conv6 = ResidualBlockDown(512, 512)        #(512,4,4)
+        self.in6_e = nn.InstanceNorm2d(512, affine=True)
+
+        activ='relu'
+        pad_type='reflect'
+        self.model = []
+        self.model += [Conv2dBlock(3, 64, 7, 1, 3,
+                                   norm=norm,
+                                   activation=activ,
+                                   pad_type=pad_type)]
+        self.model += [Conv2dBlock(64, 128, 4, 2, 1,           # 128, 128, 128 
+                                       norm= 'in',
+                                       activation=activ,
+                                       pad_type=pad_type)]
+
+        self.model += [Conv2dBlock(128, 128, 4, 2, 1,           # 128, 64 
+                                       norm= 'in',
+                                       activation=activ,
+                                       pad_type=pad_type)]
+        self.model += [Conv2dBlock(128, 256, 4, 2, 1,           # 256 32 
+                                       norm= 'in',
+                                       activation=activ,
+                                       pad_type=pad_type)]
+
+        self.model += [Conv2dBlock(256, 256, 4, 2, 1,           # 256 16
+                                       norm= 'in',
+                                       activation=activ,
+                                       pad_type=pad_type)]
+        self.model += [Conv2dBlock(256, 512, 4, 2, 1,           # 512 8
+                                       norm= 'in',
+                                       activation=activ,
+                                       pad_type=pad_type)]
+
+        self.model += [Conv2dBlock(512, 512, 4, 2, 1,           # 512 4
+                                       norm= 'in',
+                                       activation=activ,
+                                       pad_type=pad_type)]
+        
+
+        self.lmark_encoder = nn.Sequential(*self.model)
+
+
+        self.model = []
+
+        
+        self.model += [ResBlocks(2, 512, norm  = 'adain', activation=activ, pad_type='reflect')]
+
+        self.bottle =  nn.Sequential(*[Conv2dBlock(1024, 512, 3, 1, 1,           # 512 4
+                                       norm= 'in',
+                                       activation=activ,
+                                       pad_type=pad_type)]
+
+        )
+
+        self.adainlayers = nn.Sequential(*self.model)
+        self.model =[]
+        self.model += [nn.Upsample(scale_factor=2),
+                        Conv2dBlock(512, 512, 5, 1, 2,
+                                    norm='in',
+                                    activation=activ,
+                                    pad_type=pad_type)]    # 512, 8 , 8 
+        self.model += [nn.Upsample(scale_factor=2),
+                        Conv2dBlock(512, 512, 5, 1, 2,
+                                    norm='in',
+                                    activation=activ,
+                                    pad_type=pad_type)] # 512, 16 , 16 
+        self.model += [nn.Upsample(scale_factor=2),
+                        Conv2dBlock(512, 256, 5, 1, 2,
+                                    norm='in',
+                                    activation=activ,
+                                    pad_type=pad_type)] # 256, 32, 32 
+        self.model += [nn.Upsample(scale_factor=2),
+                        Conv2dBlock(256, 256, 5, 1, 2,
+                                    norm='in',
+                                    activation=activ,
+                                    pad_type=pad_type)] # 256, 64, 64 
+        self.model += [nn.Upsample(scale_factor=2), 
+                        Conv2dBlock(256, 128, 5, 1, 2,
+                                    norm='in',
+                                    activation=activ,
+                                    pad_type=pad_type)]  # 128, 128, 128 
+        self.model += [nn.Upsample(scale_factor=2), 
+                        Conv2dBlock(128, 64, 5, 1, 2,
+                                    norm='in',
+                                    activation=activ,
+                                    pad_type=pad_type)]  # 64, 256, 256 
+        self.model += [Conv2dBlock(64, 3, 7, 1, 3,
+                                   norm='none',
+                                   activation='tanh',
+                                   pad_type=pad_type)]
+        self.decoder = nn.Sequential(*self.model)
+
+
+        # self.apply(weights_init)
+
+
+        self.mlp = MLP(512,
+                       get_num_adain_params(self.decoder),
+                       256,
+                       3,
+                       norm='none',
+                       activ='relu')
+
+        # self.apply(weights_init)
+        
+    def forward(self, ani, lmark, e):
+
+        out = ani  # [B, 3, 256, 256]
+
+      
+        # Encode
+        out = self.in1_e(self.conv1(out))  # [B, 64, 128, 128]
+        out = self.in2_e(self.conv2(out))  # [B, 128, 64, 64]
+        out = self.in3_e(self.conv3(out))  # [B, 256, 32, 32]
+        out = self.att1(out)
+        out = self.in4_e(self.conv4(out))  # [B, 512, 16, 16]
+        out = self.in5_e(self.conv5(out))  # [B, 512, 8, 8]
+        out = self.in6_e(self.conv6(out))  # [B, 512, 4, 4]
+    
+        # Decode
+        adain_params = self.mlp(e)
+        assign_adain_params(adain_params, self.adainlayers)
+
+        pose_feature = self.adainlayers(out)
+
+        lmark_feature = self.lmark_encoder(lmark)
+
+        feature = torch.cat([pose_feature, lmark_feature], 1)
+
+        feature = self.bottle(feature)
+
+
+        image = self.decoder(feature)
+        return image
 # from torch.autograd import Variable
 
 # import numpy as np
