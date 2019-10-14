@@ -65,8 +65,11 @@ class Trainer():
 
 
         self.config = config
-        self.ones = Variable(torch.ones(config.batch_size, 1), requires_grad=False)
-        self.zeros = Variable(torch.zeros(config.batch_size,1 ), requires_grad=False)
+        self.ones = Variable(torch.FloatTensor(config.batch_size).fill_(1.0), requires_grad=False)
+
+        self.zeros = Variable(torch.FloatTensor(config.batch_size).fill_(0.0), requires_grad=False)
+        # self.ones = Variable(torch.ones(config.batch_size, 1), requires_grad=False)
+        # self.zeros = Variable(torch.zeros(config.batch_size,1 ), requires_grad=False)
 
         if config.cuda:
             device_ids = [int(i) for i in config.device_ids.split(',')]
@@ -82,10 +85,10 @@ class Trainer():
             self.mse_loss_fn   = self.mse_loss_fn.cuda(device=config.cuda1)
             self.l1_loss_fn = self.l1_loss_fn.cuda(device=config.cuda1)
             # Adversarial ground truths
-            self.valid = 1
-            self.fake = 0
-            # self.ones          = self.ones.cuda(device=config.cuda1)
-            # self.zeros          = self.zeros.cuda(device=config.cuda1)
+            # self.valid = 1
+            # self.fake = 0
+            self.ones          = self.ones.cuda(device=config.cuda1)
+            self.zeros          = self.zeros.cuda(device=config.cuda1)
 # #########single GPU#######################
 
 #         if config.cuda:
@@ -163,7 +166,7 @@ class Trainer():
                 
                 D_fake = self.discriminator(fake_img, target_lmark)
 
-                loss_adv = self.mse_loss_fn(D_fake, self.valid)
+                loss_adv = self.mse_loss_fn(D_fake, self.ones)
                 loss = []
                 loss.append(loss_adv)
                 if config.perceptual:
@@ -187,11 +190,11 @@ class Trainer():
 
                 # train with real image
                 D_real= self.discriminator(target_rgb, target_lmark)
-                loss_real = self.mse_loss_fn(D_real, self.valid)
+                loss_real = self.mse_loss_fn(D_real, self.ones)
 
                 # train with fake image
                 D_fake  = self.discriminator(fake_img.detach(), target_lmark)
-                loss_fake = self.mse_loss_fn(D_fake, self.fake)
+                loss_fake = self.mse_loss_fn(D_fake, self.zeros)
 
 
                 # train with ani image
