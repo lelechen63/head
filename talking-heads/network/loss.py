@@ -41,9 +41,11 @@ class LossCnt(nn.Module):
 
         vgg_xhat_features = self.VGGFace(x_hat)
 
-        lossface = 0
+        lossface = []
         for x_feat, xhat_feat in zip(vgg_x_features, vgg_xhat_features):
-            lossface += l1_loss(x_feat, xhat_feat)
+            lossface.append(l1_loss(x_feat, xhat_feat))
+
+        
 
 
         # """Retrieve vggface feature maps"""
@@ -98,6 +100,6 @@ class LossCnt(nn.Module):
         #     print (xhat_feat.shape)
         #     loss19 += l1_loss(x_feat, xhat_feat)
 
-        loss =vggface_weight * lossface # vgg19_weight * loss19 + 
+        loss =vggface_weight *  sum(lossface) # vgg19_weight * loss19 + 
 
         return loss
