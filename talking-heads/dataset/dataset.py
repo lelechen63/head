@@ -228,7 +228,7 @@ def plot_landmarks( landmarks):
     # print (points.shape)
 
 
-    blank_image = np.zeros((224,224,3), np.uint8) + 128
+    blank_image = np.zeros((224,224,3), np.uint8) 
 
     # cv2.polylines(blank_image, np.int32([points]), True, (0,255,255), 1)
 
