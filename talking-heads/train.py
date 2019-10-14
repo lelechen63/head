@@ -207,7 +207,7 @@ class Trainer():
                     logger.scalar_summary('loss_pix', loss_pix.item(),epoch * num_steps_per_epoch + step+1)
                 if config.perceptual:
                     logger.scalar_summary('loss_cnt_G', loss_cnt.item(),epoch * num_steps_per_epoch + step+1)
-                logger.scalar_summary('loss_ani', loss_ani.item(),epoch * num_steps_per_epoch + step+1)
+                # logger.scalar_summary('loss_ani', loss_ani.item(),epoch * num_steps_per_epoch + step+1)
                 t2 = time.time()
                 
                 # if (step) % 10 == 0 :
