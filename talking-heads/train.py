@@ -13,7 +13,7 @@ from collections import OrderedDict
 import argparse
 from dataset.dataset import  Lmark2rgbDataset 
 from network.network import Embedder  , Lmark2img_Discriminator
-from network.network import Lmark2img_Generator2 as Lmark2img_Generator
+from network.network import Lmark2img_Generator as Lmark2img_Generator
 from torch.nn import init
 from network.loss import LossCnt
 from logger import Logger
@@ -277,7 +277,7 @@ def parse_args():
                         default=100)
     parser.add_argument("--pixel",
                         type=bool,
-                        default=False)
+                        default=True)
     parser.add_argument("--gan",
                         type=bool,
                         default=True)
