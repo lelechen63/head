@@ -960,7 +960,7 @@ def for_3d_to_rgb(): # based on front_rt.pkl, remove the videos which not contai
                 continue
             new_data.append(line)
     print (len(new_data))
-    with open(os.path.join(root, 'txt','front_rt2.pkl'), 'wb') as handle:
+    with open(os.path.join(root, 'txt','train_front_rt2.pkl'), 'wb') as handle:
         pickle.dump(new_data, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 def file2folder(txt):
