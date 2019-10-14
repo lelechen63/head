@@ -193,10 +193,10 @@ class Trainer():
 
 
                 # train with ani image
-                D_ani  = self.discriminator(target_ani,  target_lmark)
-                loss_ani = self.mse_loss_fn(D_ani, self.zeros)
+                # D_ani  = self.discriminator(target_ani,  target_lmark)
+                # loss_ani = self.mse_loss_fn(D_ani, self.zeros)
 
-                loss_disc = loss_real  +  loss_fake + loss_ani
+                loss_disc = loss_real  +  loss_fake #+ loss_ani
 
                 loss_disc.backward()
                 self.opt_d.step()
@@ -216,7 +216,6 @@ class Trainer():
                     loss_cnt = loss_gen 
                 if not config.pixel:
                     loss_pix = loss_gen
-                print (config.pixel)
                 print("[{}/{}][{}/{}]  ,  loss_disc: {:.8f},   loss_gen: {:.8f}  ,  loss_pix: {:.8f} , loss_cnt: {:.8f}, data time: {:.4f},  model time: {} second".format(epoch+1, config.max_epochs, step+1, num_steps_per_epoch, loss_disc.item(),  loss_gen.item(),loss_pix.item(), loss_cnt.item(),  t1-t0,  t2 - t1))
                 # print("[{}/{}][{}/{}]  , loss_pix: {:.8f} , data time: {:.4f},  model time: {} second".format(epoch+1, config.max_epochs, step+1, num_steps_per_epoch, loss_pix.item(),  t1-t0,  t2 - t1))
 
