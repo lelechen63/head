@@ -262,10 +262,10 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--LEARNING_RATE_E_G",
                         type=float,
-                        default=5e-3)
+                        default=5e-4)
     parser.add_argument("--LEARNING_RATE_D",
                         type=float,
-                        default=2e-3)
+                        default=2e-4)
     parser.add_argument("--beta1",
                         type=float,
                         default=0.5)
