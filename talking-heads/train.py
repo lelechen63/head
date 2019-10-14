@@ -153,42 +153,24 @@ class Trainer():
 
                 e_hat = e_vectors.mean(dim = 1)
 
-
-
-                # # Generate frame using landmark from target frame. (use landmark only )/ (use landmark + ani 3d)
-                # here we use lmark+3d and ani 3d
-                # if config.use_ani:
-                # else:
-                #     g_in = target_lmark
-
-            
-
                 # train G, E
                 
                 for p in self.discriminator.parameters():
                     p.requires_grad = False  # to avoid computation
                 fake_img  = self.generator( target_ani,target_lmark, e_hat)
                 
-                D_fake = self.discriminator(fake_img, target_lmark   )
+                D_fake = self.discriminator(fake_img, target_lmark)
 
                 loss_adv = self.mse_loss_fn(D_fake, self.ones)
+                loss = []
+                loss.append(loss_adv)
                 if config.perceptual:
                     loss_cnt = self.loss_cnt(target_rgb, fake_img).mean()
+                    loss.append(loss_cnt)
                 if config.pixel:
                     loss_pix = self.l1_loss_fn(fake_img, target_rgb)
-                
-                if config.perceptual :
-                    if  config.pixel:
-                        loss_gen = loss_adv + loss_cnt + loss_pix
-                    else:
-                        loss_gen = loss_adv + loss_cnt
-                else:
-                    if  config.pixel:
-                        loss_gen = loss_adv  + loss_pix
-                    else:
-                        loss_gen = loss_adv 
-
-
+                    loss.append(loss_pix )
+                loss_gen = sum(loss)
                 loss_gen.backward()
                 self.opt_g.step()
 
