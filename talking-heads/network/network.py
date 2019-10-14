@@ -204,8 +204,6 @@ class  Lmark2img_Generator(nn.Module):
     def forward(self,  ani, lmark, e):
 
         out = torch.cat([ani, lmark], 1)  # [B, 6, 256, 256]
-
-      
         # Encode
         out = self.in1_e(self.conv1(out))  # [B, 64, 128, 128]
         out = self.in2_e(self.conv2(out))  # [B, 128, 64, 64]
@@ -433,7 +431,11 @@ class Lmark2img_Discriminator(nn.Module):
 
         # self.apply(weights_init)
     
-
+    def compute_loss(self, x, gt):
+        """Computes the MSE between model output and scalar gt"""
+        loss = sum([torch.mean((out - gt) ** 2) for out in self.forward(x)])
+        return loss
+        
     def forward(self, x, y): #x:  img, y: landmark 
         # assert x.dim() == 4 and x.shape[1] == 3, "Both x and y must be tensors with shape [BxK, 3, W, H]."
         # assert x.shape == y.shape, "Both x and y must be tensors with shape [BxK, 3, W, H]."

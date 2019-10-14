@@ -81,9 +81,11 @@ class Trainer():
             self.bce_loss_fn   = self.bce_loss_fn.cuda(device=config.cuda1)
             self.mse_loss_fn   = self.mse_loss_fn.cuda(device=config.cuda1)
             self.l1_loss_fn = self.l1_loss_fn.cuda(device=config.cuda1)
-
-            self.ones          = self.ones.cuda(device=config.cuda1)
-            self.zeros          = self.zeros.cuda(device=config.cuda1)
+            # Adversarial ground truths
+            self.valid = 1
+            self.fake = 0
+            # self.ones          = self.ones.cuda(device=config.cuda1)
+            # self.zeros          = self.zeros.cuda(device=config.cuda1)
 # #########single GPU#######################
 
 #         if config.cuda:
@@ -161,7 +163,7 @@ class Trainer():
                 
                 D_fake = self.discriminator(fake_img, target_lmark)
 
-                loss_adv = self.mse_loss_fn(D_fake, self.ones)
+                loss_adv = self.discriminator.compute_loss(D_fake, self.valid)
                 loss = []
                 loss.append(loss_adv)
                 if config.perceptual:
@@ -185,11 +187,11 @@ class Trainer():
 
                 # train with real image
                 D_real= self.discriminator(target_rgb, target_lmark)
-                loss_real = self.mse_loss_fn(D_real, self.ones)
+                loss_real = self.discriminator.compute_loss(D_real, self.valid)
 
                 # train with fake image
                 D_fake  = self.discriminator(fake_img.detach(), target_lmark)
-                loss_fake = self.mse_loss_fn(D_fake, self.zeros)
+                loss_fake = self.discriminator.compute_loss(D_fake, self.fake)
 
 
                 # train with ani image
