@@ -414,12 +414,11 @@ class  Lmark2img_Generator2(nn.Module):
 
 
 class Lmark2img_Discriminator(nn.Module):
-    def __init__(self, use_ani = False):
+    def __init__(self,):
         super(Lmark2img_Discriminator, self).__init__()
-        if use_ani == False:
-            self.conv1 = ResidualBlockDown(6, 64)
-        else:
-            self.conv1 = ResidualBlockDown(9, 64)
+        
+        self.conv1 = ResidualBlockDown(6, 64)
+        
         self.conv2 = ResidualBlockDown(64, 128)
         self.conv3 = ResidualBlockDown(128, 256)
         self.att = SelfAttention(256)

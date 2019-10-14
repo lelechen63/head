@@ -12,7 +12,8 @@ import numpy as np
 from collections import OrderedDict
 import argparse
 from dataset.dataset import  Lmark2rgbDataset 
-from network.network import Embedder ,Lmark2img_Generator , Lmark2img_Discriminator
+from network.network import Embedder  , Lmark2img_Discriminator
+from network.network import Lmark2img_Generator2 as Lmark2img_Generator
 from torch.nn import init
 from network.loss import LossCnt
 from logger import Logger
@@ -54,7 +55,7 @@ class Trainer():
     def __init__(self, config):
 
         self.generator = Lmark2img_Generator()
-        self.discriminator = Lmark2img_Discriminator(use_ani= config.use_ani)
+        self.discriminator = Lmark2img_Discriminator()
         self.embedder = Embedder()
 
 
@@ -157,7 +158,6 @@ class Trainer():
                 # # Generate frame using landmark from target frame. (use landmark only )/ (use landmark + ani 3d)
                 # here we use lmark+3d and ani 3d
                 # if config.use_ani:
-                g_in = torch.cat([target_lmark, target_ani], 1)
                 # else:
                 #     g_in = target_lmark
 
@@ -169,7 +169,7 @@ class Trainer():
                     p.requires_grad = False  # to avoid computation
                 fake_img  = self.generator( target_ani,target_lmark, e_hat)
                 
-                D_fake = self.discriminator(fake_img, g_in   )
+                D_fake = self.discriminator(fake_img, target_lmark   )
 
                 loss_adv = self.mse_loss_fn(D_fake, self.ones)
                 if config.perceptual:
@@ -202,16 +202,16 @@ class Trainer():
                 
 
                 # train with real image
-                D_real= self.discriminator(target_rgb, g_in)
+                D_real= self.discriminator(target_rgb, target_lmark)
                 loss_real = self.mse_loss_fn(D_real, self.ones)
 
                 # train with fake image
-                D_fake  = self.discriminator(fake_img.detach(), g_in)
+                D_fake  = self.discriminator(fake_img.detach(), target_lmark)
                 loss_fake = self.mse_loss_fn(D_fake, self.zeros)
 
 
                 # train with ani image
-                D_ani  = self.discriminator(target_ani,  g_in)
+                D_ani  = self.discriminator(target_ani,  target_lmark)
                 loss_ani = self.mse_loss_fn(D_ani, self.zeros)
 
                 loss_disc = loss_real  +  loss_fake + loss_ani
