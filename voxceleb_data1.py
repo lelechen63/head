@@ -943,21 +943,21 @@ def for_3d_to_rgb(): # based on front_rt.pkl, remove the videos which not contai
     new_data = []
   
     for line in data:
-        # print(line)
+        print(line)
         
         ani_video_path = os.path.join(root, 'unzip', line[0] + '_ani.mp4')
         if os.path.exists(ani_video_path):
-            ani_video = mmcv.VideoReader(ani_video_path)
-            real_video = mmcv.VideoReader(os.path.join(root, 'unzip', line[0] + '.mp4'))
-            ani_length = len(ani_video)
-            real_length = len(real_video)
-            reference_id = line[1]
-            if ani_length != real_length:
-                print (ani_video_path, ani_length, real_length)
-                continue
-            if reference_id >= ani_length:
-                print (ani_video_path, reference_id, real_length)
-                continue
+            # ani_video = mmcv.VideoReader(ani_video_path)
+            # real_video = mmcv.VideoReader(os.path.join(root, 'unzip', line[0] + '.mp4'))
+            # ani_length = len(ani_video)
+            # real_length = len(real_video)
+            # reference_id = line[1]
+            # if ani_length != real_length:
+            #     print (ani_video_path, ani_length, real_length)
+            #     continue
+            # if reference_id >= ani_length:
+            #     print (ani_video_path, reference_id, real_length)
+            #     continue
             new_data.append(line)
     print (len(new_data))
     with open(os.path.join(root, 'txt','train_front_rt2.pkl'), 'wb') as handle:
