@@ -191,7 +191,6 @@ def get(batch = 0 ):
             print (original_obj_path)
             print ('++++')
             continue
-
         # extract the frontal facial landmarks for key frame
         lmk3d_all = np.load(lmark_path)
         lmk3d_target = lmk3d_all[key_id]
