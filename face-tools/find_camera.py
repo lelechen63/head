@@ -191,54 +191,57 @@ def get(batch = 0 ):
             print (original_obj_path)
             print ('++++')
             continue
+        try:
+            # extract the frontal facial landmarks for key frame
+            lmk3d_all = np.load(lmark_path)
+            lmk3d_target = lmk3d_all[key_id]
 
-        # extract the frontal facial landmarks for key frame
-        lmk3d_all = np.load(lmark_path)
-        lmk3d_target = lmk3d_all[key_id]
 
-
-        # load the 3D facial landmarks on the PRNet 3D reconstructed face
-        lmk3d_origin = np.load(reference_prnet_lmark_path)
-        # lmk3d_origin[:,1] = res - lmk3d_origin[:,1]
-        
-        
-
-        # load RTs
-        rots, trans = recover(np.load(rt_path))
-
-        # calculate the affine transformation between PRNet 3D face and the frotal face landmarks
-        lmk3d_origin_homo = np.hstack((lmk3d_origin, np.ones([lmk3d_origin.shape[0],1]))) # 68x4
-        p_affine = np.linalg.lstsq(lmk3d_origin_homo, lmk3d_target, rcond=1)[0].T # Affine matrix. 3 x 4
-        pr = p_affine[:,:3] # 3x3
-        pt = p_affine[:,3:] # 3x1
-
-        # load the original 3D face mesh then transform it to align frontal face landmarks
-        vertices_org, triangles, colors = load_obj(original_obj_path) # get unfrontalized vertices position
-        vertices_origin_affine = (pr @ (vertices_org.T) + pt).T # aligned vertices
-
-        # set up the renderer
-        renderer = setup_renderer()
-        # generate animation
-
-        temp_path = './tempp_%05d'%batch
-
-        # generate animation
-        if os.path.exists(temp_path):
-            shutil.rmtree(temp_path)
-        os.mkdir(temp_path)
-        # writer = imageio.get_writer('rotation.gif', mode='I')
-        for i in range(rots.shape[0]):
-                # get rendered frame
-            vertices = (rots[i].T @ (vertices_origin_affine.T - trans[i])).T
-            face_mesh = sr.Mesh(vertices, triangles, colors, texture_type="vertex")
-            image_render = get_np_uint8_image(face_mesh, renderer) # RGBA, (224,224,3), np.uint8
+            # load the 3D facial landmarks on the PRNet 3D reconstructed face
+            lmk3d_origin = np.load(reference_prnet_lmark_path)
+            # lmk3d_origin[:,1] = res - lmk3d_origin[:,1]
             
-            #save rgba image as bgr in cv2
-            rgb_frame =  (image_render).astype(int)[:,:,:-1][...,::-1]
-            cv2.imwrite( temp_path +  "/%05d.png"%i, rgb_frame)  
-        command = 'ffmpeg -framerate 25 -i '  + temp_path + '/%5d.png  -c:v libx264 -y -vf format=yuv420p ' +   video_path[:-4] + '_ani.mp4'
-        os.system(command)
-        # break
+            
+
+            # load RTs
+            rots, trans = recover(np.load(rt_path))
+
+            # calculate the affine transformation between PRNet 3D face and the frotal face landmarks
+            lmk3d_origin_homo = np.hstack((lmk3d_origin, np.ones([lmk3d_origin.shape[0],1]))) # 68x4
+            p_affine = np.linalg.lstsq(lmk3d_origin_homo, lmk3d_target, rcond=1)[0].T # Affine matrix. 3 x 4
+            pr = p_affine[:,:3] # 3x3
+            pt = p_affine[:,3:] # 3x1
+
+            # load the original 3D face mesh then transform it to align frontal face landmarks
+            vertices_org, triangles, colors = load_obj(original_obj_path) # get unfrontalized vertices position
+            vertices_origin_affine = (pr @ (vertices_org.T) + pt).T # aligned vertices
+
+            # set up the renderer
+            renderer = setup_renderer()
+            # generate animation
+
+            temp_path = './tempp_%05d'%batch
+
+            # generate animation
+            if os.path.exists(temp_path):
+                shutil.rmtree(temp_path)
+            os.mkdir(temp_path)
+            # writer = imageio.get_writer('rotation.gif', mode='I')
+            for i in range(rots.shape[0]):
+                    # get rendered frame
+                vertices = (rots[i].T @ (vertices_origin_affine.T - trans[i])).T
+                face_mesh = sr.Mesh(vertices, triangles, colors, texture_type="vertex")
+                image_render = get_np_uint8_image(face_mesh, renderer) # RGBA, (224,224,3), np.uint8
+                
+                #save rgba image as bgr in cv2
+                rgb_frame =  (image_render).astype(int)[:,:,:-1][...,::-1]
+                cv2.imwrite( temp_path +  "/%05d.png"%i, rgb_frame)  
+            command = 'ffmpeg -framerate 25 -i '  + temp_path + '/%5d.png  -c:v libx264 -y -vf format=yuv420p ' +   video_path[:-4] + '_ani.mp4'
+            os.system(command)
+            # break
+        except:
+            print ('===++++')
+            continue
 import mmcv
 def vis_single(video_path, key_id, save_name):
     overlay = True
