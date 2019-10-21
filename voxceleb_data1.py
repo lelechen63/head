@@ -796,21 +796,6 @@ def compose_lmark_face_dataset():
                     tmp.append(sample_id)
                     tmp.append(min_r_index)
                     new_data.append(tmp)
-#                     t_diff = np.absolute(t_diff)
-#                     t_diff = np.mean(t_diff, axis =1)
-#                     min_t_index=  np.argmin(t_diff) + start_id
-                    
-#                     print (min_r_index, min_t_index)
-#                     #vialisze the results
-#                     video_path = os.path.join('/data2/lchen63/voxceleb/unzip/', data[index][0], data[index][2][0] +  '.mp4')
-#                     cap = cv2.VideoCapture(video_path)
-#                     frames = []
-#                     for t in range(lmark_length):
-#                         ret, frame = cap.read()
-#                         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-#                         frames.append(frame)
-#                     frames = np.asarray(frames)
-#                     vis(frames[sample_id],lmark[sample_id],frames[min_r_index],lmark[min_r_index],frames[min_t_index],lmark[min_t_index])
 
         else:
             for r in range(len(data[index][2])):
@@ -837,16 +822,7 @@ def compose_lmark_face_dataset():
                         tmp.append(sample_id)
                         tmp.append(min_r_index)
                         new_data.append(tmp)
-# #                         #vialisze the results
-#                         video_path = os.path.join('/data2/lchen63/voxceleb/unzip/', data[index][0], data[index][2][0] +  '.mp4')
-#                         cap = cv2.VideoCapture(video_path)
-#                         frames = []
-#                         for t in range(lmark_length):
-#                             ret, frame = cap.read()
-#                             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-#                             frames.append(frame)
-#                         frames = np.asarray(frames)
-#                         vis(frames[sample_id],lmark[sample_id],frames[min_r_index],lmark[min_r_index],frames[min_t_index],lmark[min_t_index])
+
 
     print (len(new_data))
     print (new_data[0])
@@ -963,23 +939,32 @@ def for_3d_to_rgb(): # based on front_rt.pkl, remove the videos which not contai
     with open(os.path.join(root, 'txt','train_front_rt2.pkl'), 'wb') as handle:
         pickle.dump(new_data, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-def file2folder(txt):
-    txt_r = open(txt, 'rb')
-    list = txt_r.readlines()
+def file2folder():
+    _file = open(os.path.join(root, 'txt',  "front_rt.pkl"), "rb")
+    data = pickle._Unpickler(_file)
+    data.encoding = 'latin1'
+    data = data.load()
+    _file.close()
+
+    data = data[-40000:]
+
+
+
     length = len(list)
     dir_set = set()
-    new_list = list[200000 : 300000]
-    for line in new_list:
-        line = line[:-1]
-        folder_name = os.path.dirname(line)
+    new_list = data[-40000:]
+    for k,line in enumerate( new_list):
+        video_path = os.path.join(root, 'unzip', line[0] + '.mp4') 
+        print (video_path)
+        folder_name = os.path.dirname(video_path)
         folder_name = os.path.dirname(folder_name)
         dir_set.add(folder_name)
     print (dir_set)
-    file_list = []
-    for dir_t in dir_set:
-        command_line = 'rsync -a ' + dir_t + ' ' + '/mnt/Data/lchen63/vox' 
-        # print (command_line)
-        os.system(command_line)
+    # file_list = []
+    # for dir_t in dir_set:
+    #     command_line = 'rsync -a ' + dir_t + ' ' + '/mnt/Data/lchen63/vox' 
+    #     # print (command_line)
+    #     os.system(command_line)
     #     for r,directories, files in os.walk(dir_t):
     #         for filename in files:
     #             file_list.append(os.path.join(r, filename))
@@ -1010,7 +995,7 @@ def file2folder(txt):
 # compose_front()
 
 # get_txt(os.path.join(root, 'unzip/test_video'))
-# file2folder('/data2/lchen63/voxceleb/txt/v_dev.txt')
+file2folder()
 ####################
 # get_txt(os.path.join(root, 'unzip/dev_video'))
 # get_new_txt(os.path.join(root, 'txt/v_dev.txt'))
@@ -1022,6 +1007,6 @@ def file2folder(txt):
 
 # clean_by_RT("train.pkl")
 # compose_front("train_clean.pkl")
-for_3d_to_rgb()
+# for_3d_to_rgb()
 
 
