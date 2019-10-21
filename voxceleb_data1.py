@@ -940,12 +940,16 @@ def for_3d_to_rgb(): # based on front_rt.pkl, remove the videos which not contai
         pickle.dump(new_data, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 def file2folder():
-    _file = open(os.path.join(root, 'txt',  "front_rt.pkl"), "rb")
-    data = pickle._Unpickler(_file)
-    data.encoding = 'latin1'
-    data = data.load()
-    _file.close()
+    # _file = open(os.path.join(root, 'txt',  "front_rt.pkl"), "rb")
+    # data = pickle._Unpickler(_file)
+    # data.encoding = 'latin1'
+    # data = data.load()
+    # _file.close()
+    _pickle_file = os.path.join(root, 'txt','front_rt.pkl')
+    _file = open(_pickle_file, "rb")
+    data = pickle.load(_file)
 
+    
     data = data[-40000:]
 
 
