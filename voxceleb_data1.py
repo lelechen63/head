@@ -953,7 +953,7 @@ def file2folder():
 
 
     dir_set = set()
-    new_list = data[-40000:]
+    new_list = data[-10000:]
     for k,line in enumerate( new_list):
         video_path = os.path.join(root, 'unzip', line[0] + '.mp4') 
         print (video_path)
@@ -969,7 +969,7 @@ def file2folder():
         for r,directories, files in os.walk(dir_t):
             for filename in files:
                 file_list.append(os.path.join(r, filename))
-    with ZipFile( os.path.join(root,'txt', 'zip_%03d.zip'%config.txt_start), 'w', allowZip64=True) as zip:
+    with ZipFile( os.path.join('/data/lchen63', 'zip_%03d.zip'%config.txt_start), 'w', allowZip64=True) as zip:
         for file in file_list:
             zip.write(file)
 
