@@ -945,16 +945,13 @@ def file2folder():
     # data.encoding = 'latin1'
     # data = data.load()
     # _file.close()
+    
     _pickle_file = os.path.join(root, 'txt','front_rt.pkl')
+    print (_pickle_file)
     _file = open(_pickle_file, "rb")
     data = pickle.load(_file)
 
-    
-    data = data[-40000:]
 
-
-
-    length = len(list)
     dir_set = set()
     new_list = data[-40000:]
     for k,line in enumerate( new_list):
