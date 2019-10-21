@@ -953,7 +953,7 @@ def file2folder():
 
 
     dir_set = set()
-    new_list = data[-40000:]
+    new_list = data[-4:]
     for k,line in enumerate( new_list):
         video_path = os.path.join(root, 'unzip', line[0] + '.mp4') 
         print (video_path)
@@ -961,17 +961,17 @@ def file2folder():
         folder_name = os.path.dirname(folder_name)
         dir_set.add(folder_name)
     print (dir_set)
-    # file_list = []
-    # for dir_t in dir_set:
-    #     command_line = 'rsync -a ' + dir_t + ' ' + '/mnt/Data/lchen63/vox' 
-    #     # print (command_line)
-    #     os.system(command_line)
-    #     for r,directories, files in os.walk(dir_t):
-    #         for filename in files:
-    #             file_list.append(os.path.join(r, filename))
-    # with ZipFile( os.path.join(root,'txt', 'zip_%03d.zip'%config.txt_start), 'w', allowZip64=True) as zip:
-    #     for file in file_list:
-    #         zip.write(file)
+    file_list = []
+    for dir_t in dir_set:
+        # command_line = 'rsync -a ' + dir_t + ' ' + '/data/lchen63/vox' 
+        # print (command_line)
+        # os.system(command_line)
+        for r,directories, files in os.walk(dir_t):
+            for filename in files:
+                file_list.append(os.path.join(r, filename))
+    with ZipFile( os.path.join(root,'txt', 'zip_%03d.zip'%config.txt_start), 'w', allowZip64=True) as zip:
+        for file in file_list:
+            zip.write(file)
 
 
 # def rotate_3d (rt, obj):
