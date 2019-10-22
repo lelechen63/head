@@ -40,8 +40,8 @@ def parse_args():
     return parser.parse_args()
 config = parse_args()
 # root = '/mnt/Data/lchen63/voxceleb'
-root = '/data2/lchen63/voxceleb/'
-# root ='/home/cxu-serve/p1/lchen63/voxceleb/'
+# root = '/data2/lchen63/voxceleb/'
+root ='/home/cxu-serve/p1/lchen63/voxceleb/'
 # fa = face_alignment.FaceAlignment(face_alignment.LandmarksType._3D, flip_input=False)#,  device='cpu')
 
 
@@ -950,10 +950,8 @@ def file2folder():
     print (_pickle_file)
     _file = open(_pickle_file, "rb")
     data = pickle.load(_file)
-
-
     dir_set = set()
-    new_list = data[-1000: ]
+    new_list = data[-2000: -1000]
     for k,line in enumerate( new_list):
         video_path = os.path.join(root, 'unzip', line[0] + '.mp4') 
         print (video_path)
@@ -969,9 +967,10 @@ def file2folder():
         for r,directories, files in os.walk(dir_t):
             for filename in files:
                 file_list.append(os.path.join(r, filename))
-    with ZipFile( os.path.join('/data/lchen63', 'zip_%03d.zip'%2), 'w', allowZip64=True) as zip:
+    with ZipFile( os.path.join('/data/lchen63', 'zip_%03d.zip'%0), 'w', allowZip64=True) as zip:
         for file in file_list:
             zip.write(file)
+
 
 
 # def rotate_3d (rt, obj):
@@ -997,6 +996,7 @@ def file2folder():
 
 # get_txt(os.path.join(root, 'unzip/test_video'))
 file2folder()
+# get_data_for_rendering()
 ####################
 # get_txt(os.path.join(root, 'unzip/dev_video'))
 # get_new_txt(os.path.join(root, 'txt/v_dev.txt'))
