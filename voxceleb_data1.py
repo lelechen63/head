@@ -951,7 +951,7 @@ def file2folder():
     _file = open(_pickle_file, "rb")
     data = pickle.load(_file)
     dir_set = set()
-    new_list = data[-2000: -1000]
+    new_list = data[-1000 + -1000 * config.txt_start:-1000 * config.txt_start]
     for k,line in enumerate( new_list):
         video_path = os.path.join(root, 'unzip', line[0] + '.mp4') 
         print (video_path)
@@ -966,8 +966,9 @@ def file2folder():
         # os.system(command_line)
         for r,directories, files in os.walk(dir_t):
             for filename in files:
-                file_list.append(os.path.join(r, filename))
-    with ZipFile( os.path.join('/data/lchen63', 'zip_%03d.zip'%0), 'w', allowZip64=True) as zip:
+                if filename[-3:] != 'mp4': 
+                    file_list.append(os.path.join(r, filename))
+    with ZipFile( os.path.join('/data/lchen63', 'zip_%03d.zip'%(config.txt_start + 1)), 'w', allowZip64=True) as zip:
         for file in file_list:
             zip.write(file)
 
