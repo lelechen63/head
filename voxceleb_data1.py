@@ -40,8 +40,8 @@ def parse_args():
     return parser.parse_args()
 config = parse_args()
 # root = '/mnt/Data/lchen63/voxceleb'
-# root = '/data2/lchen63/voxceleb/'
-root ='/home/cxu-serve/p1/lchen63/voxceleb/'
+root = '/data2/lchen63/voxceleb/'
+# root ='/home/cxu-serve/p1/lchen63/voxceleb/'
 # fa = face_alignment.FaceAlignment(face_alignment.LandmarksType._3D, flip_input=False)#,  device='cpu')
 
 
