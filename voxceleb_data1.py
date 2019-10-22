@@ -953,7 +953,7 @@ def file2folder():
 
 
     dir_set = set()
-    new_list = data[-11000: -10000]
+    new_list = data[-1000: ]
     for k,line in enumerate( new_list):
         video_path = os.path.join(root, 'unzip', line[0] + '.mp4') 
         print (video_path)
