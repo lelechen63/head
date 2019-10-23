@@ -923,21 +923,15 @@ def for_3d_to_rgb(): # based on front_rt.pkl, remove the videos which not contai
         
         ani_video_path = os.path.join(root, 'unzip', line[0] + '_ani.mp4')
         if os.path.exists(ani_video_path):
-            # ani_video = mmcv.VideoReader(ani_video_path)
-            # real_video = mmcv.VideoReader(os.path.join(root, 'unzip', line[0] + '.mp4'))
-            # ani_length = len(ani_video)
-            # real_length = len(real_video)
-            # reference_id = line[1]
-            # if ani_length != real_length:
-            #     print (ani_video_path, ani_length, real_length)
-            #     continue
-            # if reference_id >= ani_length:
-            #     print (ani_video_path, reference_id, real_length)
-            #     continue
+            obj_path = os.path.join(root, 'unzip', line[0] + '_original.obj')
+            new_path = os.path.join('/data/lchen63/vox/', 'unzip', line[0] + '_original.obj')
             new_data.append(line)
-    print (len(new_data))
-    with open(os.path.join(root, 'txt','train_front_rt2.pkl'), 'wb') as handle:
-        pickle.dump(new_data, handle, protocol=pickle.HIGHEST_PROTOCOL)
+            command_line = 'rsync --remove-source-files ' + obj_path + ' ' + new_path
+        break
+
+    # print (len(new_data))
+    # with open(os.path.join(root, 'txt','train_front_rt2.pkl'), 'wb') as handle:
+    #     pickle.dump(new_data, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 def file2folder():
     # _file = open(os.path.join(root, 'txt',  "front_rt.pkl"), "rb")
@@ -951,7 +945,7 @@ def file2folder():
     _file = open(_pickle_file, "rb")
     data = pickle.load(_file)
     dir_set = set()
-    new_list = data[-1000 + -1000 * config.txt_start:-1000 * config.txt_start]
+    new_list = data#[-1000 + -1000 * config.txt_start:-1000 * config.txt_start]
     for k,line in enumerate( new_list):
         video_path = os.path.join(root, 'unzip', line[0] + '.mp4') 
         print (video_path)
@@ -996,7 +990,7 @@ def file2folder():
 # compose_front()
 
 # get_txt(os.path.join(root, 'unzip/test_video'))
-file2folder()
+# file2folder()
 # get_data_for_rendering()
 ####################
 # get_txt(os.path.join(root, 'unzip/dev_video'))
@@ -1009,6 +1003,6 @@ file2folder()
 
 # clean_by_RT("train.pkl")
 # compose_front("train_clean.pkl")
-# for_3d_to_rgb()
+for_3d_to_rgb()
 
 
