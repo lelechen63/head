@@ -347,3 +347,5 @@ def gg():
 # gg()
 
 get(config.b)
+
+print ('cool')
