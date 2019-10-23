@@ -17,7 +17,7 @@ import os
 import pickle
 # root  = '/mnt/Data/lchen63/voxceleb/'
 
-# root  = '/home/cxu-serve/p1/lchen63/voxceleb/'
+# root  = '/home/cxu-serve/p1/lchen63/voxceleb/'  fucj
 import shutil
 
 import argparse
