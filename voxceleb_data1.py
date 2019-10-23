@@ -927,12 +927,14 @@ def for_3d_to_rgb(): # based on front_rt.pkl, remove the videos which not contai
             new_path = os.path.join('/data/lchen63/vox/', line[0].replace('/','___') + '_original.obj')
             new_data.append(line)
             command_line = 'rsync  --remove-source-files  ' + obj_path + ' ' + new_path
-            os.system(command_line)
-            break
+            try:
+                os.system(command_line)
+            except:
+                continue
 
-    # print (len(new_data))
-    # with open(os.path.join(root, 'txt','train_front_rt2.pkl'), 'wb') as handle:
-    #     pickle.dump(new_data, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    print (len(new_data))
+    with open(os.path.join(root, 'txt','train_front_rt2.pkl'), 'wb') as handle:
+        pickle.dump(new_data, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 def file2folder():
     # _file = open(os.path.join(root, 'txt',  "front_rt.pkl"), "rb")
