@@ -926,7 +926,7 @@ def for_3d_to_rgb(): # based on front_rt.pkl, remove the videos which not contai
             obj_path = os.path.join(root, 'unzip', line[0] + '_original.obj')
             new_path = os.path.join('/data/lchen63/vox/', 'unzip', line[0] + '_original.obj')
             new_data.append(line)
-            command_line = 'rsync --remove-source-files --relative ' + obj_path + ' ' + new_path
+            command_line = 'rsync -a --remove-source-files --relative ' + obj_path + ' ' + new_path
             os.system(command_line)
             break
 
