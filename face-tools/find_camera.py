@@ -28,7 +28,7 @@ def parse_args():
                         default=0)
     parser.add_argument("--root",
                         type=str,
-                        default='/mnt/Data/lchen63/voxceleb/')
+                        default='/home/cxu-serve/p1/lchen63/voxceleb/oppo/')
     return parser.parse_args()
 config = parse_args()
 root = config.root
