@@ -920,8 +920,9 @@ def for_3d_to_rgb(): # based on front_rt.pkl, remove the videos which not contai
     data = pickle.load(_file)
     new_data = []
   
-    for line in data:
-        
+    for kk, line in enumerate(data) :
+        if kk % 5000 ==0:
+            print (kk,len(data))
         ani_video_path = os.path.join(root, 'unzip', line[0] + '_ani.mp4')
         if os.path.exists(ani_video_path):
             try:
