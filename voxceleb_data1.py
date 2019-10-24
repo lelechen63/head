@@ -924,17 +924,17 @@ def for_3d_to_rgb(): # based on front_rt.pkl, remove the videos which not contai
         
         ani_video_path = os.path.join(root, 'unzip', line[0] + '_ani.mp4')
         if os.path.exists(ani_video_path):
-            
-            obj_path = os.path.join(root, 'unzip', line[0] + '_original.obj')
-            new_path = os.path.join('/data/lchen63/vox/', line[0].replace('/','___') + '_original.obj')
             if len(mmcv.VideoReader(ani_video_path)) >0 :
                 new_data.append(line)
+            # obj_path = os.path.join(root, 'unzip', line[0] + '_original.obj')
+            # new_path = os.path.join('/data/lchen63/vox/', line[0].replace('/','___') + '_original.obj')
             
-            command_line = 'rsync  --remove-source-files  ' + obj_path + ' ' + new_path
-            try:
-                os.system(command_line)
-            except:
-                continue
+            
+            # command_line = 'rsync  --remove-source-files  ' + obj_path + ' ' + new_path
+            # try:
+            #     os.system(command_line)
+            # except:
+            #     continue
 
     print (len(new_data))
     with open(os.path.join(root, 'txt','train_front_rt2.pkl'), 'wb') as handle:
