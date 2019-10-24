@@ -114,10 +114,7 @@ def video2img2lmark(list):
         print ('{}/{}'.format(cmt, length))
         p = os.path.join( root  , p[24:])
         if os.path.exists(p[:-5] + '.npy'):
-            bb = np.load(p[:-5] + '.npy')
-            if bb.size != 0:
-                cmt += 1
-                continue
+            continue
         
         _video2img2lmark(p[:-1], fa)
         print (time.time() - current)
