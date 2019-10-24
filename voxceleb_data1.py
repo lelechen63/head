@@ -935,18 +935,19 @@ def for_3d_to_rgb(): # based on front_rt.pkl, remove the videos which not contai
                     print(len(gg), lmark_length)
                     print (ani_video_path)
                     command_line = 'rm  ' + ani_video_path
-                   # try:
-                   #     os.system(command_line)
-                   # except:
-                   #     continue
+                    try:    
+                        print ('******')
+                        os.system(command_line)
+                    except:
+                        continue
             except:
-                print ('====')
                 print (ani_video_path)
                 command_line = 'rm  ' + ani_video_path
-                #try:
-                #    os.system(command_line)
-                #except:
-                #    continue
+                try:
+                    print ('******')
+                    os.system(command_line)
+                except:
+                    continue
 
             # obj_path = os.path.join(root, 'unzip', line[0] + '_original.obj')
             # new_path = os.path.join('/data/lchen63/vox/', line[0].replace('/','___') + '_original.obj')
