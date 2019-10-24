@@ -114,7 +114,8 @@ def video2img2lmark(list):
         print ('{}/{}'.format(cmt, length))
         p = os.path.join( root  , p[24:])
         if os.path.exists(p[:-5] + '.npy'):
-            if np.load(p[:-5] + '.npy').size != 0:
+            bb = np.load(p[:-5] + '.npy')
+            if bb.size != 0:
                 cmt += 1
                 continue
         
