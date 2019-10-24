@@ -17,7 +17,6 @@ import numpy as np
 from skimage import io
 import pickle
 import cv2
-# import face_alignment
 import librosa
 from util import utils
 from tqdm import tqdm
@@ -40,12 +39,11 @@ def parse_args():
     return parser.parse_args()
 config = parse_args()
 # root = '/mnt/Data/lchen63/voxceleb'
-root = '/data2/lchen63/voxceleb/'
+# root = '/data2/lchen63/voxceleb/'
 # root ='/home/cxu-serve/p1/lchen63/voxceleb/'
-# fa = face_alignment.FaceAlignment(face_alignment.LandmarksType._3D, flip_input=False)#,  device='cpu')
+root = '/home/cxu-serve/p1/lchen63/voxceleb/oppo/'
 
-
-def get3DLmarks(frame_list, v_path):
+def get3DLmarks(frame_list, v_path, fa):
     frame_num = len(frame_list)
     lmarks = np.zeros((frame_num, 68,3))
     for i in range(frame_num):
@@ -55,6 +53,7 @@ def get3DLmarks(frame_list, v_path):
         else:
             landmark = -np.ones((68, 3))
         lmarks[i] = landmark
+    print (v_path[:-4] + '.npy')
     np.save(v_path[:-4] + '.npy', lmarks)
 
 
@@ -75,7 +74,7 @@ def get_txt(folder):
         txt_f.write('\n')
     txt_f.close()
     
-def _video2img2lmark(v_path):
+def _video2img2lmark(v_path, fa):
     # root = '/data2/lchen63/voxceleb/'
 
     count = 0
@@ -100,11 +99,14 @@ def _video2img2lmark(v_path):
 #             count += 1
 #         else:
 #             break
-    get3DLmarks(frame_list,v_path)
+    get3DLmarks(frame_list,v_path,fa)
 
     
     
 def video2img2lmark(list):
+    import face_alignment
+    fa = face_alignment.FaceAlignment(face_alignment.LandmarksType._3D, flip_input=False)#,  device='cpu')
+
     length = len(list)
     cmt = 0
     for p in list:
@@ -116,7 +118,7 @@ def video2img2lmark(list):
                 cmt += 1
                 continue
         
-        _video2img2lmark(p[:-1])
+        _video2img2lmark(p[:-1], fa)
         print (time.time() - current)
         cmt += 1
         
@@ -124,7 +126,7 @@ def video_transfer(txt):
     txt_f = open(txt, 'rb')
     list = txt_f.readlines()
     print (len(list))
-    batch_size = int(len(list)/10)
+    batch_size = int(len(list)/50)
     i = int(config.in_file)
     video2img2lmark(list[i*batch_size:i*batch_size + batch_size])
        
@@ -919,13 +921,15 @@ def for_3d_to_rgb(): # based on front_rt.pkl, remove the videos which not contai
     new_data = []
   
     for line in data:
-        print(line)
         
         ani_video_path = os.path.join(root, 'unzip', line[0] + '_ani.mp4')
         if os.path.exists(ani_video_path):
+            
             obj_path = os.path.join(root, 'unzip', line[0] + '_original.obj')
             new_path = os.path.join('/data/lchen63/vox/', line[0].replace('/','___') + '_original.obj')
-            new_data.append(line)
+            if len(mmcv.VideoReader(ani_video_path)) >0 :
+                new_data.append(line)
+            
             command_line = 'rsync  --remove-source-files  ' + obj_path + ' ' + new_path
             try:
                 os.system(command_line)
@@ -989,7 +993,7 @@ def file2folder():
 # video2img2lmark()
 
 # audio2mfcc('/data2/lchen63/voxceleb/txt/v_test.txt')
-# video_transfer(os.path.join(root,'txt/v_test.txt'))
+# video_transfer(os.path.join(root,'txt/v_dev.txt'))
 # compose_front()
 
 # get_txt(os.path.join(root, 'unzip/test_video'))
@@ -1006,6 +1010,6 @@ def file2folder():
 
 # clean_by_RT("train.pkl")
 # compose_front("train_clean.pkl")
-for_3d_to_rgb()
+# for_3d_to_rgb()
 
 
