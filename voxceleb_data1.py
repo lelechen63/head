@@ -929,7 +929,7 @@ def for_3d_to_rgb(): # based on front_rt.pkl, remove the videos which not contai
         if os.path.exists(ani_video_path):
             try:
                 gg = mmcv.VideoReader(ani_video_path)
-                if len(gg) != lmark_length :
+                if len(gg) == lmark_length :
                     new_data.append(line)
                 else:
                     print(len(gg), lmark_length)
