@@ -1010,6 +1010,6 @@ def file2folder():
 
 # clean_by_RT("train.pkl")
 # compose_front("train_clean.pkl")
-# for_3d_to_rgb()
+for_3d_to_rgb()
 
 
