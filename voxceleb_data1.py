@@ -1017,7 +1017,7 @@ def file2folder():
 # video2img2lmark()
 
 # audio2mfcc('/data2/lchen63/voxceleb/txt/v_test.txt')
-# video_transfer(os.path.join(root,'txt/v_dev.txt'))
+video_transfer(os.path.join(root,'txt/v_dev.txt'))
 # compose_front()
 
 # get_txt(os.path.join(root, 'unzip/test_video'))
@@ -1034,6 +1034,6 @@ def file2folder():
 
 # clean_by_RT("train.pkl")
 # compose_front("train_clean.pkl")
-for_3d_to_rgb()
+#for_3d_to_rgb()
 
 
