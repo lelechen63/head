@@ -924,11 +924,12 @@ def for_3d_to_rgb(): # based on front_rt.pkl, remove the videos which not contai
         if kk % 5000 ==0:
             print (kk,len(data))
         ani_video_path = os.path.join(root, 'unzip', line[0] + '_ani.mp4')
+        lmark_path = os.path.join(root, 'unzip', line[0] + '.npy')
+        lmark_length = np.load(lmark_path).shape[0]
         if os.path.exists(ani_video_path):
             try:
                 gg = mmcv.VideoReader(ani_video_path)
-
-                if len(gg) >64 :
+                if len(gg) != lmark_length :
                     new_data.append(line)
                 else:
                     print (ani_video_path)
