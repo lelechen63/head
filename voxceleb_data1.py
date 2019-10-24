@@ -39,9 +39,9 @@ def parse_args():
     return parser.parse_args()
 config = parse_args()
 # root = '/mnt/Data/lchen63/voxceleb'
-# root = '/data2/lchen63/voxceleb/'
+root = '/data2/lchen63/voxceleb/'
 # root ='/home/cxu-serve/p1/lchen63/voxceleb/'
-root = '/home/cxu-serve/p1/lchen63/voxceleb/oppo/'
+# root = '/home/cxu-serve/p1/lchen63/voxceleb/oppo/'
 
 def get3DLmarks(frame_list, v_path, fa):
     frame_num = len(frame_list)
